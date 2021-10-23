@@ -14,11 +14,12 @@ import seaborn as sns
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pv
 import control
-
+import cothread
+from cothread.catools import caput, caget, cainfo
 
 def main():
 
-    # sg.ChangeLookAndFeel("LightGreen")
+    sg.ChangeLookAndFeel("")
 
     # define the window layout
     layout = [
@@ -50,7 +51,7 @@ def main():
         ],
         [
             sg.Text("Jog (um)"),
-            sg.InputText("100", size=(7, 1), font="Consolas 10", key="XZstage_joginc"),
+            sg.InputText("0.1", size=(7, 1), font="Consolas 10", key="XZstage_joginc"),
             sg.Button("<- X", size=(5, 1), font="Any 10", key="X-"),
             sg.Button("X ->", size=(5, 1), font="Any 10", key="X+"),
             sg.Button("Z -", size=(5, 1), font="Any 10", key="Z-"),
@@ -67,7 +68,7 @@ def main():
     window.Layout(layout)
 
     # ---===--- Event LOOP Read and display frames, operate the GUI --- #
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture('http://i23-ws002.diamond.ac.uk:8080/OAV.mjpg.mjpg')
     recording = False
     while True:
         event, values = window.Read(timeout=0, timeout_key="timeout")
@@ -85,7 +86,15 @@ def main():
             window.FindElement("image").Update(data=imgbytes)
         if event == "<- X" or "X ->" or "Z -" or "Z +":
             for tw in stage_tws:
-                control.ca.caput(getattr(pv, tw), float(int(values["XZstage_joginc"])/1000))
+                caput(getattr(pv, tw), float(values["XZstage_joginc"]))
+        if event == "X-":
+            caput(pv.stage_x_tw_f, 1)
+        if event == "X+":
+            caput(pv.stage_x_tw_r, 1)
+        if event == "Z-":
+            caput(pv.stage_z_tw_f, 1)
+        if event == "Z+":
+            caput(pv.stage_z_tw_r, 1)
         if recording:
             ret, frame = cap.read()
             imgbytes = cv2.imencode(".png", frame)[1].tobytes()  # ditto
@@ -93,9 +102,13 @@ def main():
         # update rbvs
         for rbv in rbvs:
             window.FindElement("{}".format(rbv)).Update(
-                control.ca.caget(getattr(pv, rbv))
+                caget(getattr(pv, rbv))
             )
+        
 
 
 main()
 exit()
+
+if __name__ == '__main__':
+    main()
