@@ -8,54 +8,80 @@ import cv2 as cv
 from control import ca
 import pv
 import math
-    
+
 # Set beam position and scale.
-beamX = 843
-beamY = 576
+# beamX = 843
+# beamY = 576
+# div 2 if using Qt gui as its half size
+beamX = int(843 / 2)
+beamY = int(576 / 2)
 
 # 1 pixel = 2um, convert from mm to um
-calibrate = 0.002
+calibrate = 0.002 / 2
+
 
 class Worker1(QThread):
     ImageUpdate = pyqtSignal(QImage)
 
-    def onMouse(self, event, x, y, flags, param):
-        if event == cv.EVENT_LBUTTONUP:
-            x_curr = float(ca.caget(pv.stage_x_rbv))
-            y_curr = float(ca.caget(pv.gonio_y_rbv))
-            z_curr = float(ca.caget(pv.gonio_z_rbv))
-            omega = float(ca.caget(pv.omega_rbv))
-            print("Clicked", x, y)
-            Xmove = x_curr - (x - beamX) * calibrate
-            Ymove = y_curr + math.sin(math.radians(omega)) * (y - beamY) * calibrate
-            Zmove = z_curr + math.cos(math.radians(omega)) * (y - beamY) * calibrate
-            print("Moving", Xmove, Ymove, Zmove)
-            ca.caput(pv.stage_x, Xmove)
-            ca.caput(pv.gonio_y, Ymove)
-            ca.caput(pv.gonio_z, Zmove)
-            
+    # def onMouse(self, event, x, y, flags, param):
+    #     if event == cv.EVENT_LBUTTONUP:
+    #         x_curr = float(ca.caget(pv.stage_x_rbv))
+    #         y_curr = float(ca.caget(pv.gonio_y_rbv))
+    #         z_curr = float(ca.caget(pv.gonio_z_rbv))
+    #         omega = float(ca.caget(pv.omega_rbv))
+    #         print("Clicked", x, y)
+    #         Xmove = x_curr - (x - beamX) * calibrate
+    #         Ymove = y_curr + math.sin(math.radians(omega)) * (y - beamY) * calibrate
+    #         Zmove = z_curr + math.cos(math.radians(omega)) * (y - beamY) * calibrate
+    #         print("Moving", Xmove, Ymove, Zmove)
+    #         ca.caput(pv.stage_x, Xmove)
+    #         ca.caput(pv.gonio_y, Ymove)
+    #         ca.caput(pv.gonio_z, Zmove)
 
     def run(self):
         self.ThreadActive = True
         cap = cv.VideoCapture("http://ws464.diamond.ac.uk:8080/OAV.mjpg.mjpg")
-        cv.namedWindow('OAVClickView')
+        cv.namedWindow("OAVClickView")
         while self.ThreadActive:
             ret, frame = cap.read()
             if self.ThreadActive:
-                cv.line(frame, (beamX - 10, beamY), (beamX + 10, beamY), (0,255,0), 2)
-                cv.line(frame, (beamX, beamY - 10), (beamX, beamY + 10), (0,255,0), 2)
-                #cv.ellipse(frame, (beamX, beamY), (12, 8), 0.0, 0.0, 360, (0,0,255), thickness=2) # could use to draw cut...
-                #putText(frame,'text',bottomLeftCornerOfText, font, fontScale, fontColor, thickness, lineType)
-                cv.putText(frame,'Key bindings', (20,40), cv.FONT_HERSHEY_COMPLEX_SMALL, 1.0, (0,255,255), 1, 1)
-                cv.putText(frame,'esc : close window', (25,60), cv.FONT_HERSHEY_COMPLEX_SMALL, 0.8, (0,255,255), 1, 1)
-                cv.setMouseCallback('OAVClickView', self.onMouse)
-                cv.imshow('OAVClickView', frame)
-                
-                #rgbImage = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-                #convertToQtFormat = QtGui.QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QtGui.QImage.Format_RGB888)
-                #p = convertToQtFormat.scaled(1032, 772, Qt.KeepAspectRatio)
-                #self.ImageUpdate.emit(p)
-
+                cv.line(frame, (beamX - 10, beamY), (beamX + 10, beamY), (0, 255, 0), 2)
+                cv.line(frame, (beamX, beamY - 10), (beamX, beamY + 10), (0, 255, 0), 2)
+                # cv.ellipse(frame, (beamX, beamY), (12, 8), 0.0, 0.0, 360, (0,0,255), thickness=2) # could use to draw cut...
+                # putText(frame,'text',bottomLeftCornerOfText, font, fontScale, fontColor, thickness, lineType)
+                cv.putText(
+                    frame,
+                    "Key bindings",
+                    (20, 40),
+                    cv.FONT_HERSHEY_COMPLEX_SMALL,
+                    1.0,
+                    (0, 255, 255),
+                    1,
+                    1,
+                )
+                cv.putText(
+                    frame,
+                    "esc : close window",
+                    (25, 60),
+                    cv.FONT_HERSHEY_COMPLEX_SMALL,
+                    0.8,
+                    (0, 255, 255),
+                    1,
+                    1,
+                )
+                # cv.setMouseCallback('OAVClickView', self.onMouse)
+                # cv.imshow('OAVClickView', frame)
+                # rgbImage = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+                # convertToQtFormat = QtGui.QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QtGui.QImage.Format_RGB888)
+                rgbImage = cv.cvtColor(frame, cv.COLOR_BGR2GREY)
+                convertToQtFormat = QtGui.QImage(
+                    rgbImage.data,
+                    rgbImage.shape[1],
+                    rgbImage.shape[0],
+                    QtGui.QImage.Format_Grayscale8,
+                )
+                p = convertToQtFormat.scaled(1032, 772, Qt.KeepAspectRatio)
+                self.ImageUpdate.emit(p)
 
     def stop(self):
         self.ThreadActive = False
@@ -65,15 +91,31 @@ class Worker1(QThread):
 class Ui_MainWindow(object):
     def __init__(self):
         super().__init__()
-    
+
     def setImage(self, image):
         self.oav_stream.setPixmap(QPixmap.fromImage(image))
-    
+
+    def onMouse(self, event):
+        x = event.pos().x()
+        y = event.pos().y()
+        x_curr = float(ca.caget(pv.stage_x_rbv))
+        y_curr = float(ca.caget(pv.gonio_y_rbv))
+        z_curr = float(ca.caget(pv.gonio_z_rbv))
+        omega = float(ca.caget(pv.omega_rbv))
+        print("Clicked", x, y)
+        Xmove = x_curr - (x - beamX) * calibrate
+        Ymove = y_curr + math.sin(math.radians(omega)) * (y - beamY) * calibrate
+        Zmove = z_curr + math.cos(math.radians(omega)) * (y - beamY) * calibrate
+        print("Moving", Xmove, Ymove, Zmove)
+        ca.caput(pv.stage_x, Xmove)
+        ca.caput(pv.gonio_y, Ymove)
+        ca.caput(pv.gonio_z, Zmove)
+
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1020, 999)
         MainWindow.setMinimumSize(QtCore.QSize(0, 0))
-        MainWindow.setMaximumSize(QtCore.QSize(16777215, 16777215))
+        MainWindow.setMaximumSize(QtCore.QSize(10000, 10000))
         MainWindow.setMouseTracking(False)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("icon.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
@@ -151,7 +193,7 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.stop, 1, 2, 1, 1)
         self.start = QtWidgets.QPushButton(self.centralwidget)
         self.start.setObjectName("start")
-        #self.start.clicked.connect(self.oavStart)
+        # self.start.clicked.connect(self.oavStart)
         self.gridLayout.addWidget(self.start, 1, 0, 1, 1)
         self.frame1 = QtWidgets.QFrame(self.centralwidget)
         self.frame1.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -310,8 +352,8 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.oav_stream.sizePolicy().hasHeightForWidth())
         th = Worker1()
-        #th.ImageUpdate.connect(self.setImage)
-        th.start() 
+        th.ImageUpdate.connect(self.setImage)
+        th.start()
         self.oav_stream.setSizePolicy(sizePolicy)
         self.oav_stream.setText("")
         self.oav_stream.setPixmap(QtGui.QPixmap(""))
@@ -392,6 +434,7 @@ class Ui_MainWindow(object):
 
 if __name__ == "__main__":
     import sys
+
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()

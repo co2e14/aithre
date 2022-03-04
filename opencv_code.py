@@ -1,4 +1,10 @@
+import sys
+from PyQt5 import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
 import cv2
+
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -8,6 +14,8 @@ class MainWindow(QWidget):
 
         self.FeedLabel = QLabel()
         self.VBL.addWidget(self.FeedLabel)
+        self.FeedLabel.setObjectName("Cam")
+        self.FeedLabel.mousePressEvent = self.getPos
 
         self.CancelBTN = QPushButton("Cancel")
         self.CancelBTN.clicked.connect(self.CancelFeed)
@@ -19,28 +27,42 @@ class MainWindow(QWidget):
         self.Worker1.ImageUpdate.connect(self.ImageUpdateSlot)
         self.setLayout(self.VBL)
 
+    def getPos(self , event):
+        x = event.pos().x()
+        y = event.pos().y()
+        print(x, y)
+
     def ImageUpdateSlot(self, Image):
         self.FeedLabel.setPixmap(QPixmap.fromImage(Image))
 
     def CancelFeed(self):
         self.Worker1.stop()
 
+
 class Worker1(QThread):
     ImageUpdate = pyqtSignal(QImage)
+            
     def run(self):
         self.ThreadActive = True
-        Capture = cv2.VideoCapture("http://ws464.diamond.ac.uk:8080/OAV.mjpg.mjpg")
+        Capture = cv2.VideoCapture(2)
         while self.ThreadActive:
             ret, frame = Capture.read()
             if ret:
                 Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 FlippedImage = cv2.flip(Image, 1)
-                ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888)
+                ConvertToQtFormat = QImage(
+                    FlippedImage.data,
+                    FlippedImage.shape[1],
+                    FlippedImage.shape[0],
+                    QImage.Format_RGB888,
+                )
                 Pic = ConvertToQtFormat.scaled(640, 480, Qt.KeepAspectRatio)
                 self.ImageUpdate.emit(Pic)
+
     def stop(self):
         self.ThreadActive = False
         self.quit()
+
 
 if __name__ == "__main__":
     App = QApplication(sys.argv)
