@@ -1,4 +1,4 @@
-#!/dls_sw/i23/scripts/ctrl_conda python3
+#!/usr/bin/env /dls_sw/i23/scripts/ctrl_conda/bin/python
 import sys
 
 if sys.version_info[0] >= 3:
@@ -68,7 +68,7 @@ def main():
     window.Layout(layout)
 
     # ---===--- Event LOOP Read and display frames, operate the GUI --- #
-    cap = cv2.VideoCapture('http://i23-ws002.diamond.ac.uk:8080/OAV.mjpg.mjpg')
+    cap = cv2.VideoCapture('http://ws464.diamond.ac.uk:8080/OAV.mjpg.mjpg')
     recording = False
     while True:
         event, values = window.Read(timeout=0, timeout_key="timeout")
