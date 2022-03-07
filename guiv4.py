@@ -10,43 +10,31 @@ import pv
 import math
 
 # Set beam position and scale.
-# beamX = 843
-# beamY = 576
+beamX = 1080
+beamY = 748
 # div 2 if using Qt gui as its half size
-beamX = int(843 / 2)
-beamY = int(576 / 2)
 
-# 1 pixel = 2um, convert from mm to um
-calibrate = 0.002 / 2
+
+# pixel size 3.45, 2 to 1 imaging system so calib 1/2 
+calibrate = 0.00172
+#calibrate = 0.00345
 
 
 class Worker1(QThread):
     ImageUpdate = pyqtSignal(QImage)
 
-    # def onMouse(self, event, x, y, flags, param):
-    #     if event == cv.EVENT_LBUTTONUP:
-    #         x_curr = float(ca.caget(pv.stage_x_rbv))
-    #         y_curr = float(ca.caget(pv.gonio_y_rbv))
-    #         z_curr = float(ca.caget(pv.gonio_z_rbv))
-    #         omega = float(ca.caget(pv.omega_rbv))
-    #         print("Clicked", x, y)
-    #         Xmove = x_curr - (x - beamX) * calibrate
-    #         Ymove = y_curr + math.sin(math.radians(omega)) * (y - beamY) * calibrate
-    #         Zmove = z_curr + math.cos(math.radians(omega)) * (y - beamY) * calibrate
-    #         print("Moving", Xmove, Ymove, Zmove)
-    #         ca.caput(pv.stage_x, Xmove)
-    #         ca.caput(pv.gonio_y, Ymove)
-    #         ca.caput(pv.gonio_z, Zmove)
-
     def run(self):
         self.ThreadActive = True
         cap = cv.VideoCapture("http://ws464.diamond.ac.uk:8080/OAV.mjpg.mjpg")
-        cv.namedWindow("OAVClickView")
         while self.ThreadActive:
             ret, frame = cap.read()
             if self.ThreadActive:
-                cv.line(frame, (beamX - 10, beamY), (beamX + 10, beamY), (0, 255, 0), 2)
-                cv.line(frame, (beamX, beamY - 10), (beamX, beamY + 10), (0, 255, 0), 2)
+                cv.line(
+                    frame, (beamX - 10, beamY), (beamX + 10, beamY), (0, 255, 0), 2,
+                )
+                cv.line(
+                    frame, (beamX, beamY - 10), (beamX, beamY + 10), (0, 255, 0), 2,
+                )
                 # cv.ellipse(frame, (beamX, beamY), (12, 8), 0.0, 0.0, 360, (0,0,255), thickness=2) # could use to draw cut...
                 # putText(frame,'text',bottomLeftCornerOfText, font, fontScale, fontColor, thickness, lineType)
                 cv.putText(
@@ -69,17 +57,14 @@ class Worker1(QThread):
                     1,
                     1,
                 )
-                # cv.setMouseCallback('OAVClickView', self.onMouse)
-                # cv.imshow('OAVClickView', frame)
-                # rgbImage = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-                # convertToQtFormat = QtGui.QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QtGui.QImage.Format_RGB888)
-                rgbImage = cv.cvtColor(frame, cv.COLOR_BGR2GREY)
+                rgbImage = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
                 convertToQtFormat = QtGui.QImage(
                     rgbImage.data,
                     rgbImage.shape[1],
                     rgbImage.shape[0],
-                    QtGui.QImage.Format_Grayscale8,
+                    QtGui.QImage.Format_RGB888,
                 )
+                p = convertToQtFormat
                 p = convertToQtFormat.scaled(1032, 772, Qt.KeepAspectRatio)
                 self.ImageUpdate.emit(p)
 
@@ -97,15 +82,19 @@ class Ui_MainWindow(object):
 
     def onMouse(self, event):
         x = event.pos().x()
+        x = x * 2
         y = event.pos().y()
+        y = y * 2
         x_curr = float(ca.caget(pv.stage_x_rbv))
+        print(x_curr)
         y_curr = float(ca.caget(pv.gonio_y_rbv))
         z_curr = float(ca.caget(pv.gonio_z_rbv))
         omega = float(ca.caget(pv.omega_rbv))
         print("Clicked", x, y)
-        Xmove = x_curr - (x - beamX) * calibrate
-        Ymove = y_curr + math.sin(math.radians(omega)) * (y - beamY) * calibrate
-        Zmove = z_curr + math.cos(math.radians(omega)) * (y - beamY) * calibrate
+        Xmove = x_curr - ((x - beamX) * calibrate)
+        print((x - beamX))
+        Ymove = y_curr + (math.sin(math.radians(omega)) * ((y - beamY) * calibrate))
+        Zmove = z_curr + (math.cos(math.radians(omega)) * ((y - beamY) * calibrate))
         print("Moving", Xmove, Ymove, Zmove)
         ca.caput(pv.stage_x, Xmove)
         ca.caput(pv.gonio_y, Ymove)
@@ -357,6 +346,7 @@ class Ui_MainWindow(object):
         self.oav_stream.setSizePolicy(sizePolicy)
         self.oav_stream.setText("")
         self.oav_stream.setPixmap(QtGui.QPixmap(""))
+        self.oav_stream.mousePressEvent = self.onMouse
         self.oav_stream.setScaledContents(True)
         self.oav_stream.setAlignment(QtCore.Qt.AlignCenter)
         self.oav_stream.setObjectName("oav_stream")
