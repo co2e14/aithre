@@ -1,3 +1,5 @@
+!#/usr/bin/python3
+
 # C Orr 2022
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -15,9 +17,9 @@ beamY = 748
 # div 2 if using Qt gui as its half size
 
 
-# pixel size 3.45, 2 to 1 imaging system so calib 1/2 
+#pixel size 3.45, 2 to 1 imaging system so calib 1/2
 calibrate = 0.00172
-#calibrate = 0.00345
+# calibrate = 0.00345
 
 
 class Worker1(QThread):
@@ -79,26 +81,6 @@ class Ui_MainWindow(object):
 
     def setImage(self, image):
         self.oav_stream.setPixmap(QPixmap.fromImage(image))
-
-    def onMouse(self, event):
-        x = event.pos().x()
-        x = x * 2
-        y = event.pos().y()
-        y = y * 2
-        x_curr = float(ca.caget(pv.stage_x_rbv))
-        print(x_curr)
-        y_curr = float(ca.caget(pv.gonio_y_rbv))
-        z_curr = float(ca.caget(pv.gonio_z_rbv))
-        omega = float(ca.caget(pv.omega_rbv))
-        print("Clicked", x, y)
-        Xmove = x_curr - ((x - beamX) * calibrate)
-        print((x - beamX))
-        Ymove = y_curr + (math.sin(math.radians(omega)) * ((y - beamY) * calibrate))
-        Zmove = z_curr + (math.cos(math.radians(omega)) * ((y - beamY) * calibrate))
-        print("Moving", Xmove, Ymove, Zmove)
-        ca.caput(pv.stage_x, Xmove)
-        ca.caput(pv.gonio_y, Ymove)
-        ca.caput(pv.gonio_z, Zmove)
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -182,7 +164,6 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.stop, 1, 2, 1, 1)
         self.start = QtWidgets.QPushButton(self.centralwidget)
         self.start.setObjectName("start")
-        # self.start.clicked.connect(self.oavStart)
         self.gridLayout.addWidget(self.start, 1, 0, 1, 1)
         self.frame1 = QtWidgets.QFrame(self.centralwidget)
         self.frame1.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -255,9 +236,8 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.up.sizePolicy().hasHeightForWidth())
         self.up.setSizePolicy(sizePolicy)
-        self.up.setText("")
+        self.up.setText("Up")
         icon1 = QtGui.QIcon()
-        icon1.addPixmap(QtGui.QPixmap("up.png"), QtGui.QIcon.Normal, QtGui.QIcon.On)
         self.up.setIcon(icon1)
         self.up.setIconSize(QtCore.QSize(60, 60))
         self.up.setObjectName("up")
@@ -270,9 +250,8 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.down.sizePolicy().hasHeightForWidth())
         self.down.setSizePolicy(sizePolicy)
-        self.down.setText("")
+        self.down.setText("Down")
         icon2 = QtGui.QIcon()
-        icon2.addPixmap(QtGui.QPixmap("down.png"), QtGui.QIcon.Normal, QtGui.QIcon.On)
         self.down.setIcon(icon2)
         self.down.setIconSize(QtCore.QSize(60, 60))
         self.down.setAutoRepeat(False)
@@ -291,9 +270,8 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.right.sizePolicy().hasHeightForWidth())
         self.right.setSizePolicy(sizePolicy)
-        self.right.setText("")
+        self.right.setText("Right")
         icon3 = QtGui.QIcon()
-        icon3.addPixmap(QtGui.QPixmap("right.png"), QtGui.QIcon.Normal, QtGui.QIcon.On)
         self.right.setIcon(icon3)
         self.right.setIconSize(QtCore.QSize(60, 60))
         self.right.setObjectName("right")
@@ -310,16 +288,15 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.left.sizePolicy().hasHeightForWidth())
         self.left.setSizePolicy(sizePolicy)
-        self.left.setText("")
+        self.left.setText("Left")
         icon4 = QtGui.QIcon()
-        icon4.addPixmap(QtGui.QPixmap("left.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.left.setIcon(icon4)
         self.left.setIconSize(QtCore.QSize(60, 60))
         self.left.setObjectName("left")
         self.motion_grid.addWidget(self.left, 1, 0, 1, 1)
-        self.plu15 = QtWidgets.QPushButton(self.frame2)
-        self.plu15.setObjectName("plu15")
-        self.motion_grid.addWidget(self.plu15, 4, 0, 1, 1)
+        self.plus15 = QtWidgets.QPushButton(self.frame2)
+        self.plus15.setObjectName("plus15")
+        self.motion_grid.addWidget(self.plus15, 4, 0, 1, 1)
         self.minus90 = QtWidgets.QPushButton(self.frame2)
         self.minus90.setObjectName("minus90")
         self.motion_grid.addWidget(self.minus90, 5, 1, 1, 1)
@@ -340,9 +317,6 @@ class Ui_MainWindow(object):
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.oav_stream.sizePolicy().hasHeightForWidth())
-        th = Worker1()
-        th.ImageUpdate.connect(self.setImage)
-        th.start()
         self.oav_stream.setSizePolicy(sizePolicy)
         self.oav_stream.setText("")
         self.oav_stream.setPixmap(QtGui.QPixmap(""))
@@ -381,8 +355,97 @@ class Ui_MainWindow(object):
         self.menuBar.addAction(self.menuFile.menuAction())
         self.menuBar.addAction(self.menuIOCs.menuAction())
 
+        # button connections
+        th = Worker1()
+        th.ImageUpdate.connect(self.setImage)
+        th.start()
+        self.start.clicked.connect(self.oavStart)
+        self.stop.clicked.connect(self.oavStop)
+        # gonio rotation buttons
+        self.minus180.clicked.connect(lambda: self.gonioRotate(-180))
+        self.plus180.clicked.connect(lambda: self.gonioRotate(180))
+        self.minus90.clicked.connect(lambda: self.gonioRotate(-90))
+        self.plus90.clicked.connect(lambda: self.gonioRotate(90))
+        self.minus15.clicked.connect(lambda: self.gonioRotate(-15))
+        self.plus15.clicked.connect(lambda: self.gonioRotate(15))
+        self.minus5.clicked.connect(lambda: self.gonioRotate(-5))
+        self.plus5.clicked.connect(lambda: self.gonioRotate(5))
+        self.zero.clicked.connect(lambda: self.gonioRotate(0))
+
+        self.up.clicked.connect(lambda: self.jogSample("up"))
+        self.down.clicked.connect(lambda: self.jogSample("down"))
+        self.left.clicked.connect(lambda: self.jogSample("left"))
+        self.right.clicked.connect(lambda: self.jogSample("right"))
+
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+    def jogSample(self, direction):
+        if direction == "left":
+            ca.caput(pv.stage_x, (float(ca.caget(pv.stage_x_rbv)) - 0.005))
+        elif direction == "right":
+            ca.caput(pv.stage_x, (float(ca.caget(pv.stage_x_rbv)) + 0.005))
+        elif direction == "up":
+            ca.caput(
+                pv.gonio_y,
+                (float(ca.caget(pv.gonio_y_rbv)))
+                + ((math.sin(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.005,
+            )
+            ca.caput(
+                pv.gonio_z,
+                (float(ca.caget(pv.gonio_z_rbv)))
+                + ((math.cos(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.005,
+            )
+        elif direction == "down":
+            ca.caput(
+                pv.gonio_y,
+                (float(ca.caget(pv.gonio_y_rbv)))
+                - ((math.sin(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.005,
+            )
+            ca.caput(
+                pv.gonio_z,
+                (float(ca.caget(pv.gonio_z_rbv)))
+                - ((math.cos(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.005,
+            )
+        else:
+            pass
+
+    # for moving sample to beam centre when clicked
+    # this took ages and still not sure why it works...
+    def onMouse(self, event):
+        x = event.pos().x()
+        x = x * 2
+        y = event.pos().y()
+        y = y * 2
+        x_curr = float(ca.caget(pv.stage_x_rbv))
+        print(x_curr)
+        y_curr = float(ca.caget(pv.gonio_y_rbv))
+        z_curr = float(ca.caget(pv.gonio_z_rbv))
+        omega = float(ca.caget(pv.omega_rbv))
+        print("Clicked", x, y)
+        Xmove = x_curr - ((x - beamX) * calibrate)
+        print((x - beamX))
+        Ymove = y_curr + (math.sin(math.radians(omega)) * ((y - beamY) * calibrate))
+        Zmove = z_curr + (math.cos(math.radians(omega)) * ((y - beamY) * calibrate))
+        print("Moving", Xmove, Ymove, Zmove)
+        ca.caput(pv.stage_x, Xmove)
+        ca.caput(pv.gonio_y, Ymove)
+        ca.caput(pv.gonio_z, Zmove)
+
+    def oavStart(self):
+        ca.caput(pv.oav_acquire, "Acquire")
+
+    def oavStop(self):
+        ca.caput(pv.oav_acquire, "Done")
+
+    def gonioRotate(self, amount):
+        gonio_current = float(ca.caget(pv.omega_rbv))
+        if amount == 0:
+            gonio_request = 0
+        else:
+            gonio_request = gonio_current + amount
+        print("Moving gonio omega to", str(gonio_request))
+        ca.caput(pv.omega, gonio_request)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -407,7 +470,7 @@ class Ui_MainWindow(object):
         self.minus15.setText(_translate("MainWindow", "-15"))
         self.plus90.setText(_translate("MainWindow", "+90"))
         self.zero.setText(_translate("MainWindow", "0"))
-        self.plu15.setText(_translate("MainWindow", "+15"))
+        self.plus15.setText(_translate("MainWindow", "+15"))
         self.minus90.setText(_translate("MainWindow", "-90"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.menuIOCs.setTitle(_translate("MainWindow", "IOCs"))

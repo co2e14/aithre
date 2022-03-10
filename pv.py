@@ -51,3 +51,6 @@ omega_rbv = "LA18L-MO-LSR-01:OMEGA.RBV"
 omega_tws = "LA18L-MO-LSR-01:OMEGA.TWV"
 omega_tw_f = "LA18L-MO-LSR-01:OMEGA.TWF"
 omega_tw_r = "LA18L-MO-LSR-01:OMEGA.TWR"
+
+# OAV
+oav_acquire = "LA18L-DI-OAV-01:CAM:Acquire"
