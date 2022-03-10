@@ -26,7 +26,7 @@ stage_z_tws = "LA18L-MO-LSR-01:Z.TWV"
 stage_z_tw_f = "LA18L-MO-LSR-01:Z.TWF"
 stage_z_tw_r = "LA18L-MO-LSR-01:Z.TWR"
 
-# Y 
+# Y
 stage_y = "LA18L-MO-LSR-01:Y"
 stage_y_rbv = "LA18L-MO-LSR-01:Y.RBV"
 stage_y_tws = "LA18L-MO-LSR-01:Y.TWV"
@@ -54,3 +54,16 @@ omega_tw_r = "LA18L-MO-LSR-01:OMEGA.TWR"
 
 # OAV
 oav_acquire = "LA18L-DI-OAV-01:CAM:Acquire"
+oav_mjpg_maxw = "LA18L-DI-OAV-01:MJPG:MAXW"
+oav_mjpg_maxh = "LA18L-DI-OAV-01:MJPG:MAXH"
+oav_cam_acqtime = "LA18L-DI-OAV-01:CAM:AcquireTime"
+oav_cam_gain = "LA18L-DI-OAV-01:CAM:Gain"
+oav_roi_ecb = "LA18L-DI-OAV-01:ROI:EnableCallbacks"
+oav_stat_ecb = "LA18L-DI-OAV-01:STAT:EnableCallbacks"
+oav_arr_ecb = "LA18L-DI-OAV-01:ARR:EnableCallbacks"
+oav_proc_ecb = "LA18L-DI-OAV-01:PROC:EnableCallbacks"
+oav_over_ecb = "LA18L-DI-OAV-01:OVER:EnableCallbacks"
+oav_fimg_ecb = "LA18L-DI-OAV-01:FIMG:EnableCallbacks"
+oav_tiff_ecb = "LA18L-DI-OAV-01:TIFF:EnableCallbacks"
+oav_hdf5_ecb = "LA18L-DI-OAV-01:HDF5:EnableCallbacks"
+oav_pva_ecb = "LA18L-DI-OAV-01:PVA:EnableCallbacks"
