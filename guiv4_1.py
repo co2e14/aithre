@@ -1,88 +1,13 @@
-#!/dls/science/groups/i23/pyenvs/ctrl_conda/bin/python
+# -*- coding: utf-8 -*-
 
-# C Orr 2022
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+# Form implementation generated from reading ui file 'guiv4.ui'
+#
+# Created by: PyQt5 UI code generator 5.12.3
+#
+# WARNING! All changes made in this file will be lost!
+
+
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PIL import Image, ImageTk
-import cv2 as cv
-from control import ca
-import pv
-import math
-
-# Set beam position and scale.
-beamX = 1080
-beamY = 748
-# div 2 if using Qt gui as its half size
-
-
-# pixel size 3.45, 2 to 1 imaging system so calib 1/2
-calibrate = 0.00172
-# calibrate = 0.00345
-
-
-class Worker1(QThread):
-    ImageUpdate = pyqtSignal(QImage)
-    zoom = 1
-
-    def updateZoom(self, zoom):
-        self.zoom = zoom
-
-    def run(self):
-        self.ThreadActive = True
-        cap = cv.VideoCapture("http://ws464.diamond.ac.uk:8080/OAV.mjpg.mjpg")
-        while self.ThreadActive:
-            ret, frame = cap.read()
-            if self.ThreadActive:
-                cv.line(
-                    frame, (beamX - 10, beamY), (beamX + 10, beamY), (0, 255, 0), 2,
-                )
-                cv.line(
-                    frame, (beamX, beamY - 10), (beamX, beamY + 10), (0, 255, 0), 2,
-                )
-                # cv.ellipse(frame, (beamX, beamY), (12, 8), 0.0, 0.0, 360, (0,0,255), thickness=2) # could use to draw cut...
-                # cv.putText(frame,'text',bottomLeftCornerOfText, font, fontScale, fontColor, thickness, lineType)
-                rgbImage = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-                convertToQtFormat = QtGui.QImage(
-                    rgbImage.data,
-                    rgbImage.shape[1],
-                    rgbImage.shape[0],
-                    QtGui.QImage.Format_RGB888,
-                )
-                # if self.zoom == 2:
-                #     convertToQtFormat = convertToQtFormat[258:(258 + 979), 428:(428 + 1302)]
-                # else:
-                #     pass
-                p = convertToQtFormat
-                p = convertToQtFormat.scaled(1032, 772, Qt.KeepAspectRatio)
-                self.ImageUpdate.emit(p)
-
-    def stop(self):
-        self.ThreadActive = False
-        self.quit()
-
-
-class Worker2(QThread):
-    rbvUpdate = pyqtSignal(list)
-
-    def run(self):
-        self.ThreadActive = True
-        while self.ThreadActive:
-            allRBVsList = []
-            allRBVsList += [str(ca.caget(pv.stage_x_rbv))]
-            allRBVsList += [str(ca.caget(pv.gonio_y_rbv))]
-            allRBVsList += [str(ca.caget(pv.gonio_z_rbv))]
-            allRBVsList += [str(ca.caget(pv.omega_rbv))]            
-            self.rbvUpdate.emit(allRBVsList)
-            allRBVsList = []
-
-
-class Ui_MainWindow(object):
-    def __init__(self):
-        super().__init__()
-
-    ZoomUpdate = pyqtSignal(int)
 
 
 class Ui_MainWindow(object):
@@ -113,16 +38,16 @@ class Ui_MainWindow(object):
         self.frameFineControl.setObjectName("frameFineControl")
         self.readback_grid = QtWidgets.QGridLayout(self.frameFineControl)
         self.readback_grid.setObjectName("readback_grid")
-        self.exposure_rbv = QtWidgets.QLabel(self.frameFineControl)
-        self.exposure_rbv.setObjectName("exposure_rbv")
-        self.readback_grid.addWidget(self.exposure_rbv, 1, 1, 1, 1)
+        self.label = QtWidgets.QLabel(self.frameFineControl)
+        self.label.setObjectName("label")
+        self.readback_grid.addWidget(self.label, 1, 1, 1, 1)
         self.labZ = QtWidgets.QLabel(self.frameFineControl)
         self.labZ.setAlignment(QtCore.Qt.AlignCenter)
         self.labZ.setObjectName("labZ")
         self.readback_grid.addWidget(self.labZ, 5, 0, 1, 1)
-        self.gain_rbv = QtWidgets.QLabel(self.frameFineControl)
-        self.gain_rbv.setObjectName("gain_rbv")
-        self.readback_grid.addWidget(self.gain_rbv, 2, 1, 1, 1)
+        self.label_2 = QtWidgets.QLabel(self.frameFineControl)
+        self.label_2.setObjectName("label_2")
+        self.readback_grid.addWidget(self.label_2, 2, 1, 1, 1)
         self.gony_rbv = QtWidgets.QLabel(self.frameFineControl)
         self.gony_rbv.setObjectName("gony_rbv")
         self.readback_grid.addWidget(self.gony_rbv, 4, 1, 1, 1)
@@ -192,9 +117,7 @@ class Ui_MainWindow(object):
         self.labOmega.setObjectName("labOmega")
         self.readback_grid.addWidget(self.labOmega, 7, 0, 1, 1)
         self.labX = QtWidgets.QLabel(self.frameFineControl)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.labX.sizePolicy().hasHeightForWidth())
@@ -216,18 +139,12 @@ class Ui_MainWindow(object):
         self.snapshot = QtWidgets.QPushButton(self.centralwidget)
         self.snapshot.setObjectName("snapshot")
         self.gridLayout.addWidget(self.snapshot, 1, 4, 1, 1)
-        spacerItem = QtWidgets.QSpacerItem(
-            40, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum
-        )
+        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         self.gridLayout.addItem(spacerItem, 2, 3, 1, 1)
-        spacerItem1 = QtWidgets.QSpacerItem(
-            40, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum
-        )
+        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         self.gridLayout.addItem(spacerItem1, 2, 1, 1, 1)
         self.oav_stream = QtWidgets.QLabel(self.centralwidget)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.oav_stream.sizePolicy().hasHeightForWidth())
@@ -247,10 +164,7 @@ class Ui_MainWindow(object):
         self.motion_grid.setSpacing(5)
         self.motion_grid.setObjectName("motion_grid")
         self.up = QtWidgets.QPushButton(self.framePositionButtons)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.MinimumExpanding,
-            QtWidgets.QSizePolicy.MinimumExpanding,
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.up.sizePolicy().hasHeightForWidth())
@@ -271,13 +185,11 @@ class Ui_MainWindow(object):
         self.plus90 = QtWidgets.QPushButton(self.framePositionButtons)
         self.plus90.setObjectName("plus90")
         self.motion_grid.addWidget(self.plus90, 4, 2, 1, 1)
-        self.plus15 = QtWidgets.QPushButton(self.framePositionButtons)
-        self.plus15.setObjectName("plus15")
-        self.motion_grid.addWidget(self.plus15, 4, 1, 1, 1)
+        self.plu15 = QtWidgets.QPushButton(self.framePositionButtons)
+        self.plu15.setObjectName("plu15")
+        self.motion_grid.addWidget(self.plu15, 4, 1, 1, 1)
         self.down = QtWidgets.QPushButton(self.framePositionButtons)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.down.sizePolicy().hasHeightForWidth())
@@ -304,10 +216,7 @@ class Ui_MainWindow(object):
         self.plus180.setObjectName("plus180")
         self.motion_grid.addWidget(self.plus180, 4, 3, 1, 1)
         self.left = QtWidgets.QPushButton(self.framePositionButtons)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.MinimumExpanding,
-            QtWidgets.QSizePolicy.MinimumExpanding,
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.left.sizePolicy().hasHeightForWidth())
@@ -320,10 +229,7 @@ class Ui_MainWindow(object):
         self.left.setObjectName("left")
         self.motion_grid.addWidget(self.left, 1, 0, 1, 1)
         self.right = QtWidgets.QPushButton(self.framePositionButtons)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.MinimumExpanding,
-            QtWidgets.QSizePolicy.MinimumExpanding,
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.right.sizePolicy().hasHeightForWidth())
@@ -359,45 +265,35 @@ class Ui_MainWindow(object):
         self.gonioSens.setMinimumSize(QtCore.QSize(20, 20))
         self.gonioSens.setMaximumSize(QtCore.QSize(20, 20))
         self.gonioSens.setText("")
-        self.gonioSens.setAlignment(
-            QtCore.Qt.AlignLeading | QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop
-        )
+        self.gonioSens.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
         self.gonioSens.setObjectName("gonioSens")
         self.robot_grid.addWidget(self.gonioSens, 1, 1, 1, 1, QtCore.Qt.AlignHCenter)
         self.labGonioSens = QtWidgets.QLabel(self.frameRobot)
         self.labGonioSens.setObjectName("labGonioSens")
         self.robot_grid.addWidget(self.labGonioSens, 1, 0, 1, 1)
         self.load = QtWidgets.QPushButton(self.frameRobot)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.load.sizePolicy().hasHeightForWidth())
         self.load.setSizePolicy(sizePolicy)
         self.load.setObjectName("load")
         self.robot_grid.addWidget(self.load, 3, 0, 1, 1)
-        self.currentSamp = QtWidgets.QLabel(self.frameRobot)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        self.currentsamp = QtWidgets.QLabel(self.frameRobot)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.currentSamp.sizePolicy().hasHeightForWidth())
-        self.currentSamp.setSizePolicy(sizePolicy)
-        self.currentSamp.setAutoFillBackground(False)
-        self.currentSamp.setFrameShape(QtWidgets.QFrame.NoFrame)
-        self.currentSamp.setObjectName("currentSamp")
-        self.robot_grid.addWidget(self.currentSamp, 0, 1, 1, 1, QtCore.Qt.AlignHCenter)
+        sizePolicy.setHeightForWidth(self.currentsamp.sizePolicy().hasHeightForWidth())
+        self.currentsamp.setSizePolicy(sizePolicy)
+        self.currentsamp.setAutoFillBackground(False)
+        self.currentsamp.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.currentsamp.setObjectName("currentsamp")
+        self.robot_grid.addWidget(self.currentsamp, 0, 1, 1, 1, QtCore.Qt.AlignHCenter)
         self.labCurrentSamp = QtWidgets.QLabel(self.frameRobot)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(
-            self.labCurrentSamp.sizePolicy().hasHeightForWidth()
-        )
+        sizePolicy.setHeightForWidth(self.labCurrentSamp.sizePolicy().hasHeightForWidth())
         self.labCurrentSamp.setSizePolicy(sizePolicy)
         self.labCurrentSamp.setObjectName("labCurrentSamp")
         self.robot_grid.addWidget(self.labCurrentSamp, 0, 0, 1, 1)
@@ -407,12 +303,7 @@ class Ui_MainWindow(object):
         self.dry = QtWidgets.QPushButton(self.frameRobot)
         self.dry.setObjectName("dry")
         self.robot_grid.addWidget(self.dry, 4, 1, 1, 1)
-        spacerItem2 = QtWidgets.QSpacerItem(
-            20,
-            40,
-            QtWidgets.QSizePolicy.Minimum,
-            QtWidgets.QSizePolicy.MinimumExpanding,
-        )
+        spacerItem2 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding)
         self.robot_grid.addItem(spacerItem2, 2, 0, 1, 2)
         self.gridLayout.addWidget(self.frameRobot, 2, 4, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
@@ -468,12 +359,10 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(
-            _translate("MainWindow", "Aithre v4.1 - I23 Laser Shaping")
-        )
-        self.exposure_rbv.setText(_translate("MainWindow", "0.04"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Aithre v4.1 - I23 Laser Shaping"))
+        self.label.setText(_translate("MainWindow", "0.04"))
         self.labZ.setText(_translate("MainWindow", "Z"))
-        self.gain_rbv.setText(_translate("MainWindow", "0"))
+        self.label_2.setText(_translate("MainWindow", "0"))
         self.gony_rbv.setText(_translate("MainWindow", "0.12"))
         self.labZoom.setText(_translate("MainWindow", "Zoom"))
         self.labGain.setText(_translate("MainWindow", "Gain"))
@@ -495,7 +384,7 @@ class Ui_MainWindow(object):
         self.minus90.setText(_translate("MainWindow", "-90"))
         self.plus5.setText(_translate("MainWindow", "+5"))
         self.plus90.setText(_translate("MainWindow", "+90"))
-        self.plus15.setText(_translate("MainWindow", "+15"))
+        self.plu15.setText(_translate("MainWindow", "+15"))
         self.minus180.setText(_translate("MainWindow", "-180"))
         self.minus5.setText(_translate("MainWindow", "-5"))
         self.minus15.setText(_translate("MainWindow", "-15"))
@@ -504,7 +393,7 @@ class Ui_MainWindow(object):
         self.zeroAll.setText(_translate("MainWindow", "ZeroAll"))
         self.labGonioSens.setText(_translate("MainWindow", "Gonio Sensor"))
         self.load.setText(_translate("MainWindow", "Load"))
-        self.currentSamp.setText(_translate("MainWindow", "0"))
+        self.currentsamp.setText(_translate("MainWindow", "0"))
         self.labCurrentSamp.setText(_translate("MainWindow", "Current Sample"))
         self.unload.setText(_translate("MainWindow", "Unload"))
         self.dry.setText(_translate("MainWindow", "Dry"))
@@ -513,154 +402,5 @@ class Ui_MainWindow(object):
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         self.actionSave_log.setText(_translate("MainWindow", "Save log"))
         self.actionRestart_OAV_IOC.setText(_translate("MainWindow", "Restart OAV IOC"))
-        self.actionRestart_Robot_IOC.setText(
-            _translate("MainWindow", "Restart Robot IOC")
-        )
-        self.actionRestart_Gonio_IOC.setText(
-            _translate("MainWindow", "Restart Gonio IOC")
-        )
-
-        # OAV connections
-        setZoom = self.zoomSelect.currentText()
-        self.setupOAV()
-        th = Worker1()
-        th.ImageUpdate.connect(self.setImage)
-        th.start()
-        self.oav_stream.mousePressEvent = self.onMouse
-        self.start.clicked.connect(self.oavStart)
-        self.stop.clicked.connect(self.oavStop)
-        # RBV updating connections
-        th2 = Worker2()
-        th2.rbvUpdate.connect(self.updateRBVs)
-        th2.start()
-        # gonio rotation buttons
-        self.minus180.clicked.connect(lambda: self.gonioRotate(-180))
-        self.plus180.clicked.connect(lambda: self.gonioRotate(180))
-        self.minus90.clicked.connect(lambda: self.gonioRotate(-90))
-        self.plus90.clicked.connect(lambda: self.gonioRotate(90))
-        self.minus15.clicked.connect(lambda: self.gonioRotate(-15))
-        self.plus15.clicked.connect(lambda: self.gonioRotate(15))
-        self.minus5.clicked.connect(lambda: self.gonioRotate(-5))
-        self.plus5.clicked.connect(lambda: self.gonioRotate(5))
-        self.zero.clicked.connect(lambda: self.gonioRotate(0))
-        # jog buttons
-        self.up.clicked.connect(lambda: self.jogSample("up"))
-        self.down.clicked.connect(lambda: self.jogSample("down"))
-        self.left.clicked.connect(lambda: self.jogSample("left"))
-        self.right.clicked.connect(lambda: self.jogSample("right"))
-        # exposure and gain sliders
-        self.zoomSelect.currentIndexChanged.connect(self.setZoom)
-        self.sliderExposure.valueChanged.connect(self.changeExposureGain)
-        self.sliderGain.valueChanged.connect(self.changeExposureGain)
-
-    def setZoom(self, level):
-        setZoom = self.zoomSelect.currentText()
-        th.updateZoom(int(setZoom))
-
-    def changeExposureGain(self):
-        ca.caput(pv.oav_cam_acqtime, (self.sliderExposure.value() / 100))
-        ca.caput(pv.oav_cam_gain, self.sliderGain.value())
-
-    def jogSample(self, direction):
-        if direction == "left":
-            ca.caput(pv.stage_x, (float(ca.caget(pv.stage_x_rbv)) - 0.005))
-        elif direction == "right":
-            ca.caput(pv.stage_x, (float(ca.caget(pv.stage_x_rbv)) + 0.005))
-        elif direction == "up":
-            ca.caput(
-                pv.gonio_y,
-                (float(ca.caget(pv.gonio_y_rbv)))
-                + ((math.sin(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.005,
-            )
-            ca.caput(
-                pv.gonio_z,
-                (float(ca.caget(pv.gonio_z_rbv)))
-                + ((math.cos(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.005,
-            )
-        elif direction == "down":
-            ca.caput(
-                pv.gonio_y,
-                (float(ca.caget(pv.gonio_y_rbv)))
-                - ((math.sin(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.005,
-            )
-            ca.caput(
-                pv.gonio_z,
-                (float(ca.caget(pv.gonio_z_rbv)))
-                - ((math.cos(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.005,
-            )
-        else:
-            pass
-
-    # for moving sample to beam centre when clicked
-    # this took ages and still not sure why it works...
-    def onMouse(self, event):
-        x = event.pos().x()
-        x = x * 2
-        y = event.pos().y()
-        y = y * 2
-        x_curr = float(ca.caget(pv.stage_x_rbv))
-        print(x_curr)
-        y_curr = float(ca.caget(pv.gonio_y_rbv))
-        z_curr = float(ca.caget(pv.gonio_z_rbv))
-        omega = float(ca.caget(pv.omega_rbv))
-        print("Clicked", x, y)
-        Xmove = x_curr - ((x - beamX) * calibrate)
-        print((x - beamX))
-        Ymove = y_curr + (math.sin(math.radians(omega)) * ((y - beamY) * calibrate))
-        Zmove = z_curr + (math.cos(math.radians(omega)) * ((y - beamY) * calibrate))
-        print("Moving", Xmove, Ymove, Zmove)
-        ca.caput(pv.stage_x, Xmove)
-        ca.caput(pv.gonio_y, Ymove)
-        ca.caput(pv.gonio_z, Zmove)
-
-    def setupOAV(self):
-        for callback in (
-            pv.oav_roi_ecb,
-            pv.oav_arr_ecb,
-            pv.oav_stat_ecb,
-            pv.oav_proc_ecb,
-            pv.oav_over_ecb,
-            pv.oav_fimg_ecb,
-            pv.oav_tiff_ecb,
-            pv.oav_hdf5_ecb,
-            pv.oav_pva_ecb,
-        ):
-            ca.caput(callback, "Disable")
-        ca.caput(pv.oav_mjpg_maxw, 2064)
-        ca.caput(pv.oav_mjpg_maxh, 1544)
-
-    def oavStart(self):
-        ca.caput(pv.oav_acquire, "Acquire")
-
-    def oavStop(self):
-        ca.caput(pv.oav_acquire, "Done")
-
-    def setImage(self, image):
-        self.oav_stream.setPixmap(QPixmap.fromImage(image))
-
-    def gonioRotate(self, amount):
-        gonio_current = float(ca.caget(pv.omega_rbv))
-        if amount == 0:
-            gonio_request = 0
-        else:
-            gonio_request = gonio_current + amount
-        print("Moving gonio omega to", str(gonio_request))
-        ca.caput(pv.omega, gonio_request)
-
-    def updateRBVs(self, rbvs):
-        # stagex, gony, gonz, omega
-        self.stagex_rbv.setText(str(round(float(rbvs[0]), 3)))
-        self.gony_rbv.setText(str(round(float(rbvs[1]), 3)))
-        self.gonz_rbv.setText(str(round(float(rbvs[2]), 3)))
-        self.omega_rbv.setText(str(round(float(rbvs[3]), 0)))
-
-
-if __name__ == "__main__":
-    import sys
-
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    MainWindow.show()
-    sys.exit(app.exec_())
+        self.actionRestart_Robot_IOC.setText(_translate("MainWindow", "Restart Robot IOC"))
+        self.actionRestart_Gonio_IOC.setText(_translate("MainWindow", "Restart Gonio IOC"))

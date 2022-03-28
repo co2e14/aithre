@@ -4,16 +4,6 @@ import sys
 import time
 
 
-def pv_name(name):
-    for pv in globals():
-        if name[:2].lower() in pv.lower():
-            print("PV:", pv[:])
-
-
-def pv_return():
-    return globals()
-
-
 # XZ stages
 stage_x = "LA18L-MO-LSR-01:X"
 stage_x_rbv = "LA18L-MO-LSR-01:X.RBV"
@@ -67,3 +57,11 @@ oav_fimg_ecb = "LA18L-DI-OAV-01:FIMG:EnableCallbacks"
 oav_tiff_ecb = "LA18L-DI-OAV-01:TIFF:EnableCallbacks"
 oav_hdf5_ecb = "LA18L-DI-OAV-01:HDF5:EnableCallbacks"
 oav_pva_ecb = "LA18L-DI-OAV-01:PVA:EnableCallbacks"
+
+# robot
+robot_next_pin = "LA18L-MO-ROBOT-01:NEXT_PIN"
+robot_next_pin_rbv = "LA18L-MO-ROBOT-01:NEXT_PIN_RBV"
+robot_current_pin_rbv = "LA18L-MO-ROBOT-01:CURRENT_PIN_RBV"
+robot_pin_mounted = "LA18L-MO-ROBOT-01:PIN_MOUNTED"
+robot_reset = "LA18L-MO-ROBOT-01:RESET.PROC"
+robot_prog_running = "LA18L-MO-ROBOT-01:PROGRAM_RUNNING"
