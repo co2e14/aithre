@@ -73,7 +73,16 @@ class Worker2(QThread):
             allRBVsList += [str(ca.caget(pv.stage_x_rbv))]
             allRBVsList += [str(ca.caget(pv.gonio_y_rbv))]
             allRBVsList += [str(ca.caget(pv.gonio_z_rbv))]
-            allRBVsList += [str(ca.caget(pv.omega_rbv))]            
+            allRBVsList += [str(ca.caget(pv.omega_rbv))]
+            allRBVsList += [str(ca.caget(pv.oav_cam_acqtime_rbv))]
+            allRBVsList += [str(ca.caget(pv.oav_cam_gain_rbv))]
+            allRBVsList += [str(ca.caget(pv.robot_current_pin_rbv))]
+            if ca.caget(pv.robot_pin_mounted) is True: #need to work out what this pv returns
+                allRBVsList += "\u2714"
+            elif ca.caget(pv.robot_pin_mounted) is False:
+                allRBVsList += "\u274C"
+            else:
+                allRBVsList += "\u003F"
             self.rbvUpdate.emit(allRBVsList)
             allRBVsList = []
 
@@ -156,7 +165,7 @@ class Ui_MainWindow(object):
         self.sliderExposure = QtWidgets.QSlider(self.frameFineControl)
         self.sliderExposure.setMinimum(1)
         self.sliderExposure.setMaximum(100)
-        self.sliderExposure.setProperty("value", 4)
+        #self.sliderExposure.setProperty("value", 1)
         self.sliderExposure.setOrientation(QtCore.Qt.Horizontal)
         self.sliderExposure.setInvertedAppearance(False)
         self.sliderExposure.setInvertedControls(False)
@@ -358,7 +367,7 @@ class Ui_MainWindow(object):
         self.gonioSens = QtWidgets.QLabel(self.frameRobot)
         self.gonioSens.setMinimumSize(QtCore.QSize(20, 20))
         self.gonioSens.setMaximumSize(QtCore.QSize(20, 20))
-        self.gonioSens.setText("")
+        self.gonioSens.setText("\u003F")
         self.gonioSens.setAlignment(
             QtCore.Qt.AlignLeading | QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop
         )
@@ -519,8 +528,12 @@ class Ui_MainWindow(object):
         self.actionRestart_Gonio_IOC.setText(
             _translate("MainWindow", "Restart Gonio IOC")
         )
-
-        # OAV connections
+        # setup
+        # sliders and sensors
+        self.gonioSens.setText("\u003F")
+        self.sliderExposure.setProperty("value", str(round(float(ca.caget(pv.oav_cam_acqtime_rbv)) * 100)))
+        self.sliderGain.setProperty("value", str(round(float(ca.caget(pv.oav_cam_gain_rbv)))))
+        # OAV connections thread
         setZoom = self.zoomSelect.currentText()
         self.setupOAV()
         th = Worker1()
@@ -529,7 +542,7 @@ class Ui_MainWindow(object):
         self.oav_stream.mousePressEvent = self.onMouse
         self.start.clicked.connect(self.oavStart)
         self.stop.clicked.connect(self.oavStop)
-        # RBV updating connections
+        # RBV updating connections thread
         th2 = Worker2()
         th2.rbvUpdate.connect(self.updateRBVs)
         th2.start()
@@ -552,6 +565,11 @@ class Ui_MainWindow(object):
         self.zoomSelect.currentIndexChanged.connect(self.setZoom)
         self.sliderExposure.valueChanged.connect(self.changeExposureGain)
         self.sliderGain.valueChanged.connect(self.changeExposureGain)
+        self.zeroAll.clicked.connect(self.returntozero)
+
+    def returntozero(self):
+        for motor in [pv.gonio_y, pv.gonio_z, pv.stage_x, pv.omega]:
+            ca.caput(motor, 0)
 
     def setZoom(self, level):
         setZoom = self.zoomSelect.currentText()
@@ -648,11 +666,15 @@ class Ui_MainWindow(object):
         ca.caput(pv.omega, gonio_request)
 
     def updateRBVs(self, rbvs):
-        # stagex, gony, gonz, omega
+        # stagex, gony, gonz, omega, oavexp, oavgain, currentsamp, goniosens
         self.stagex_rbv.setText(str(round(float(rbvs[0]), 3)))
         self.gony_rbv.setText(str(round(float(rbvs[1]), 3)))
         self.gonz_rbv.setText(str(round(float(rbvs[2]), 3)))
         self.omega_rbv.setText(str(round(float(rbvs[3]), 0)))
+        self.exposure_rbv.setText(str(round(float(rbvs[4]), 3)))
+        self.gain_rbv.setText(str(int(rbvs[5])))
+        self.currentSamp.setText(str(rbvs[6]))
+        self.gonioSens.setText(str(rbvs[7]))
 
 
 if __name__ == "__main__":

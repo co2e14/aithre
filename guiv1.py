@@ -16,5 +16,4 @@ z_label = tk.Label(master=xz_frame, text="Z").grid(row=1, column=3)
 xz_frame.grid(row=1, column=1)
 ttk.Separator(master=window).grid(row=2, column=1, pady=10, sticky="ew")
 
-
 window.mainloop()
