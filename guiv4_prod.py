@@ -5,11 +5,11 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PIL import Image, ImageTk
 import cv2 as cv
 from control import ca
 import pv
 import math
+import sys
 
 # Set beam position and scale.
 beamX = 1080
@@ -21,7 +21,7 @@ beamY = 748
 calibrate = 0.00172
 # calibrate = 0.00345
 
-
+# separate thread for OAV
 class Worker1(QThread):
     ImageUpdate = pyqtSignal(QImage)
     zoom = 1
@@ -63,6 +63,7 @@ class Worker1(QThread):
         self.quit()
 
 
+# separate thread to run caget for RBVs
 class Worker2(QThread):
     rbvUpdate = pyqtSignal(list)
 
@@ -77,7 +78,9 @@ class Worker2(QThread):
             allRBVsList += [str(ca.caget(pv.oav_cam_acqtime_rbv))]
             allRBVsList += [str(ca.caget(pv.oav_cam_gain_rbv))]
             allRBVsList += [str(ca.caget(pv.robot_current_pin_rbv))]
-            if ca.caget(pv.robot_pin_mounted) is True: #need to work out what this pv returns
+            if (
+                ca.caget(pv.robot_pin_mounted) is True
+            ):  # need to work out what this pv returns
                 allRBVsList += "\u2714"
             elif ca.caget(pv.robot_pin_mounted) is False:
                 allRBVsList += "\u274C"
@@ -87,14 +90,27 @@ class Worker2(QThread):
             allRBVsList = []
 
 
+# not working yet. Kind of. Ish. Need to have it emit to gui
+class Worker3(QThread):
+    def run(self):
+        self.ThreadActive = True
+        cap = cv.VideoCapture("http://ws464.diamond.ac.uk:8080/OAV.mjpg.mjpg")
+        while self.ThreadActive:
+            cv.namedWindow("RoboView")
+            ret, frame = cap.read()
+            if self.ThreadActive:
+                cv.imshow("RoboView", frame)
+
+    def stop(self):
+        self.ThreadActive = False
+        cap = cv.VideoCapture("http://i23-lasereye-01.diamond.ac.uk/mjpg/video.mjpg")
+        cap.release()
+
+
 class Ui_MainWindow(object):
     def __init__(self):
         super().__init__()
 
-    ZoomUpdate = pyqtSignal(int)
-
-
-class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1088, 874)
@@ -165,7 +181,7 @@ class Ui_MainWindow(object):
         self.sliderExposure = QtWidgets.QSlider(self.frameFineControl)
         self.sliderExposure.setMinimum(1)
         self.sliderExposure.setMaximum(100)
-        #self.sliderExposure.setProperty("value", 1)
+        # self.sliderExposure.setProperty("value", 1)
         self.sliderExposure.setOrientation(QtCore.Qt.Horizontal)
         self.sliderExposure.setInvertedAppearance(False)
         self.sliderExposure.setInvertedControls(False)
@@ -358,12 +374,12 @@ class Ui_MainWindow(object):
         self.frameRobot.setObjectName("frameRobot")
         self.robot_grid = QtWidgets.QGridLayout(self.frameRobot)
         self.robot_grid.setObjectName("robot_grid")
-        self.spinBox = QtWidgets.QSpinBox(self.frameRobot)
-        self.spinBox.setProperty("showGroupSeparator", False)
-        self.spinBox.setMinimum(1)
-        self.spinBox.setMaximum(16)
-        self.spinBox.setObjectName("spinBox")
-        self.robot_grid.addWidget(self.spinBox, 3, 1, 1, 1)
+        self.spinToLoad = QtWidgets.QSpinBox(self.frameRobot)
+        self.spinToLoad.setProperty("showGroupSeparator", False)
+        self.spinToLoad.setMinimum(1)
+        self.spinToLoad.setMaximum(16)
+        self.spinToLoad.setObjectName("spinToLoad")
+        self.robot_grid.addWidget(self.spinToLoad, 3, 1, 1, 1)
         self.gonioSens = QtWidgets.QLabel(self.frameRobot)
         self.gonioSens.setMinimumSize(QtCore.QSize(20, 20))
         self.gonioSens.setMaximumSize(QtCore.QSize(20, 20))
@@ -458,8 +474,8 @@ class Ui_MainWindow(object):
         self.zoomSelect.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
         MainWindow.setTabOrder(self.load, self.unload)
-        MainWindow.setTabOrder(self.unload, self.spinBox)
-        MainWindow.setTabOrder(self.spinBox, self.dry)
+        MainWindow.setTabOrder(self.unload, self.spinToLoad)
+        MainWindow.setTabOrder(self.spinToLoad, self.dry)
         MainWindow.setTabOrder(self.dry, self.start)
         MainWindow.setTabOrder(self.start, self.stop)
         MainWindow.setTabOrder(self.stop, self.sliderExposure)
@@ -529,10 +545,16 @@ class Ui_MainWindow(object):
             _translate("MainWindow", "Restart Gonio IOC")
         )
         # setup
+        # menus
+        self.actionExit.triggered.connect(self.quit)
         # sliders and sensors
         self.gonioSens.setText("\u003F")
-        self.sliderExposure.setProperty("value", str(round(float(ca.caget(pv.oav_cam_acqtime_rbv)) * 100)))
-        self.sliderGain.setProperty("value", str(round(float(ca.caget(pv.oav_cam_gain_rbv)))))
+        self.sliderExposure.setProperty(
+            "value", str(round(float(ca.caget(pv.oav_cam_acqtime_rbv)) * 100))
+        )
+        self.sliderGain.setProperty(
+            "value", str(round(float(ca.caget(pv.oav_cam_gain_rbv))))
+        )
         # OAV connections thread
         setZoom = self.zoomSelect.currentText()
         self.setupOAV()
@@ -566,14 +588,29 @@ class Ui_MainWindow(object):
         self.sliderExposure.valueChanged.connect(self.changeExposureGain)
         self.sliderGain.valueChanged.connect(self.changeExposureGain)
         self.zeroAll.clicked.connect(self.returntozero)
+        # robot buttons
+        # testing camera start stop
+        #self.up.clicked.connect(self.showRoboCam)
+        #self.down.clicked.connect(self.stopRoboCam)
+
+    def showRoboCam(self):
+        th3 = Worker3()
+        th3.run()
+
+    def stopRoboCam(self):
+        th3 = Worker3()
+        th3.stop()
+
+    def quit(self):
+        sys.exit()
 
     def returntozero(self):
         for motor in [pv.gonio_y, pv.gonio_z, pv.stage_x, pv.omega]:
             ca.caput(motor, 0)
 
-    def setZoom(self, level):
-        setZoom = self.zoomSelect.currentText()
-        th.updateZoom(int(setZoom))
+    # def setZoom(self, level):
+    #     setZoom = self.zoomSelect.currentText()
+    #     th.updateZoom(int(setZoom))
 
     def changeExposureGain(self):
         ca.caput(pv.oav_cam_acqtime, (self.sliderExposure.value() / 100))
@@ -609,8 +646,7 @@ class Ui_MainWindow(object):
         else:
             pass
 
-    # for moving sample to beam centre when clicked
-    # this took ages and still not sure why it works...
+    # moving sample to beam centre when clicked
     def onMouse(self, event):
         x = event.pos().x()
         x = x * 2
