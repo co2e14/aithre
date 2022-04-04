@@ -7,7 +7,7 @@ import os
 import datetime
 import subprocess
 import pv
-from control import ca
+from bin.control import ca
 import os, re, sys
 import math, time, string, inspect
 from datetime import datetime

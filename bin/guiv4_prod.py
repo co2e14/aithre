@@ -6,7 +6,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5 import QtCore, QtGui, QtWidgets
 import cv2 as cv
-from control import ca
+from bin.control import ca
 import pv
 import math
 import sys

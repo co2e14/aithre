@@ -13,7 +13,7 @@ import time
 import seaborn as sns
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pv
-import control
+import bin.control as control
 import cothread
 from cothread.catools import caput, caget, cainfo
 
