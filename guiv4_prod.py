@@ -608,9 +608,9 @@ class Ui_MainWindow(object):
         for motor in [pv.gonio_y, pv.gonio_z, pv.stage_x, pv.omega]:
             ca.caput(motor, 0)
 
-    # def setZoom(self, level):
-    #     setZoom = self.zoomSelect.currentText()
-    #     th.updateZoom(int(setZoom))
+    def setZoom(self, level):
+        setZoom = self.zoomSelect.currentText()
+        th.updateZoom(int(setZoom))
 
     def changeExposureGain(self):
         ca.caput(pv.oav_cam_acqtime, (self.sliderExposure.value() / 100))
