@@ -1,8 +1,4 @@
 #!/usr/bin/python
-import os
-import sys
-import time
-
 
 # XZ stages
 stage_x = "LA18L-MO-LSR-01:X"
@@ -67,3 +63,45 @@ robot_current_pin_rbv = "LA18L-MO-ROBOT-01:CURRENT_PIN_RBV"
 robot_pin_mounted = "LA18L-MO-ROBOT-01:PIN_MOUNTED"
 robot_reset = "LA18L-MO-ROBOT-01:RESET.PROC"
 robot_prog_running = "LA18L-MO-ROBOT-01:PROGRAM_RUNNING"
+
+
+# as dict
+# XZ stages
+axis = {
+    "stage_x": "LA18L-MO-LSR-01:X",
+    "stage_z": "LA18L-MO-LSR-01:Z",
+    "stage_y": "LA18L-MO-LSR-01:Y",
+    "gonio_z": "LA18L-MO-LSR-01:SAMPZ",
+    "gonio_y": "LA18L-MO-LSR-01:SAMPY",
+    #"omega": "LA18L-MO-LSR-01:OMEGA",
+}
+
+# OAV
+oav = {
+    "oav_acquire": "LA18L-DI-OAV-01:CAM:Acquire",
+    "oav_mjpg_maxw": "LA18L-DI-OAV-01:MJPG:MAXW",
+    "oav_mjpg_maxh": "LA18L-DI-OAV-01:MJPG:MAXH",
+    "oav_cam_acqtime": "LA18L-DI-OAV-01:CAM:AcquireTime",
+    "oav_cam_acqtime_rbv": "LA18L-DI-OAV-01:CAM:AcquireTime_RBV",
+    "oav_cam_gain": "LA18L-DI-OAV-01:CAM:Gain",
+    "oav_cam_gain_rbv": "LA18L-DI-OAV-01:CAM:Gain_RBV",
+    "oav_roi_ecb": "LA18L-DI-OAV-01:ROI:EnableCallbacks",
+    "oav_stat_ecb": "LA18L-DI-OAV-01:STAT:EnableCallbacks",
+    "oav_arr_ecb": "LA18L-DI-OAV-01:ARR:EnableCallbacks",
+    "oav_proc_ecb": "LA18L-DI-OAV-01:PROC:EnableCallbacks",
+    "oav_over_ecb": "LA18L-DI-OAV-01:OVER:EnableCallbacks",
+    "oav_fimg_ecb": "LA18L-DI-OAV-01:FIMG:EnableCallbacks",
+    "oav_tiff_ecb": "LA18L-DI-OAV-01:TIFF:EnableCallbacks",
+    "oav_hdf5_ecb": "LA18L-DI-OAV-01:HDF5:EnableCallbacks",
+    "oav_pva_ecb": "LA18L-DI-OAV-01:PVA:EnableCallbacks",
+}
+
+# robot
+robot = {
+    "robot_next_pin": "LA18L-MO-ROBOT-01:NEXT_PIN",
+    "robot_next_pin_rbv": "LA18L-MO-ROBOT-01:NEXT_PIN_RBV",
+    "robot_current_pin_rbv": "LA18L-MO-ROBOT-01:CURRENT_PIN_RBV",
+    "robot_pin_mounted": "LA18L-MO-ROBOT-01:PIN_MOUNTED",
+    "robot_reset": "LA18L-MO-ROBOT-01:RESET.PROC",
+    "robot_prog_running": "LA18L-MO-ROBOT-01:PROGRAM_RUNNING",
+}
