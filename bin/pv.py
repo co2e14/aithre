@@ -73,7 +73,7 @@ axis = {
     "stage_y": "LA18L-MO-LSR-01:Y",
     "gonio_z": "LA18L-MO-LSR-01:SAMPZ",
     "gonio_y": "LA18L-MO-LSR-01:SAMPY",
-    #"omega": "LA18L-MO-LSR-01:OMEGA",
+    "omega": "LA18L-MO-LSR-01:OMEGA",
 }
 
 # OAV
