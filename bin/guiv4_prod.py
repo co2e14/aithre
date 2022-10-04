@@ -6,14 +6,14 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5 import QtCore, QtGui, QtWidgets
 import cv2 as cv
-from bin.control import ca
+from control import ca
 import pv
 import math
 import sys
 
 # Set beam position and scale.
-beamX = 1080
-beamY = 748
+beamX = 1058
+beamY = 710
 # div 2 if using Qt gui as its half size
 
 
@@ -380,14 +380,11 @@ class Ui_MainWindow(object):
         self.spinToLoad.setMaximum(16)
         self.spinToLoad.setObjectName("spinToLoad")
         self.robot_grid.addWidget(self.spinToLoad, 3, 1, 1, 1)
-        self.gonioSens = QtWidgets.QLabel(self.frameRobot)
-        self.gonioSens.setMinimumSize(QtCore.QSize(20, 20))
-        self.gonioSens.setMaximumSize(QtCore.QSize(20, 20))
-        self.gonioSens.setText("\u003F")
-        self.gonioSens.setAlignment(
-            QtCore.Qt.AlignLeading | QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop
-        )
-        self.gonioSens.setObjectName("gonioSens")
+        self.gonioSens = QPushButton(self.frameRobot)
+        self.gonioSens.setObjectName(u"gonioSens")
+        self.gonioSens.setMinimumSize(QSize(30, 30))
+        self.gonioSens.setMaximumSize(QSize(30, 30))
+        self.gonioSens.setStyleSheet("background-color: red")
         self.robot_grid.addWidget(self.gonioSens, 1, 1, 1, 1, QtCore.Qt.AlignHCenter)
         self.labGonioSens = QtWidgets.QLabel(self.frameRobot)
         self.labGonioSens.setObjectName("labGonioSens")
@@ -548,7 +545,6 @@ class Ui_MainWindow(object):
         # menus
         self.actionExit.triggered.connect(self.quit)
         # sliders and sensors
-        self.gonioSens.setText("\u003F")
         self.sliderExposure.setProperty(
             "value", str(round(float(ca.caget(pv.oav_cam_acqtime_rbv)) * 100))
         )
@@ -589,9 +585,20 @@ class Ui_MainWindow(object):
         self.sliderGain.valueChanged.connect(self.changeExposureGain)
         self.zeroAll.clicked.connect(self.returntozero)
         # robot buttons
+        self.load.clicked.connect(self.loadNextPin)
         # testing camera start stop
         #self.up.clicked.connect(self.showRoboCam)
         #self.down.clicked.connect(self.stopRoboCam)
+
+    def loadNextPin(self):
+        ca.caput(pv.robot_next_pin, self.spinToLoad.value())
+        ca.caput(pv.robot_proc_load, 1)
+
+    def unloadPin(self):
+        ca.caput(pv.robot_proc_unload, 1)
+
+    def dryGripper(self):
+        ca.caput(pv.robot_proc_dry, 1)
 
     def showRoboCam(self):
         th3 = Worker3()
@@ -608,6 +615,7 @@ class Ui_MainWindow(object):
         for motor in [pv.gonio_y, pv.gonio_z, pv.stage_x, pv.omega]:
             ca.caput(motor, 0)
 
+    # not currently working
     def setZoom(self, level):
         setZoom = self.zoomSelect.currentText()
         th.updateZoom(int(setZoom))
@@ -710,7 +718,10 @@ class Ui_MainWindow(object):
         self.exposure_rbv.setText(str(round(float(rbvs[4]), 3)))
         self.gain_rbv.setText(str(int(rbvs[5])))
         self.currentSamp.setText(str(rbvs[6]))
-        self.gonioSens.setText(str(rbvs[7]))
+        if ca.caget(pv.robot_pin_mounted) == "Yes":
+            self.gonioSens.setStyleSheet("background-color: green")
+        else:
+            self.gonioSens.setStyleSheet("background-color: white")
 
 
 if __name__ == "__main__":
