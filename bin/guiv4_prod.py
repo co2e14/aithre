@@ -12,8 +12,8 @@ import math
 import sys
 
 # Set beam position and scale.
-beamX = 1058
-beamY = 710
+beamX = 1060
+beamY = 717
 # div 2 if using Qt gui as its half size
 
 
@@ -71,7 +71,7 @@ class Worker2(QThread):
         self.ThreadActive = True
         while self.ThreadActive:
             allRBVsList = []
-            allRBVsList += [str(ca.caget(pv.stage_x_rbv))]
+            allRBVsList += [str(ca.caget(pv.stage_z_rbv))]
             allRBVsList += [str(ca.caget(pv.gonio_y_rbv))]
             allRBVsList += [str(ca.caget(pv.gonio_z_rbv))]
             allRBVsList += [str(ca.caget(pv.omega_rbv))]
@@ -612,7 +612,7 @@ class Ui_MainWindow(object):
         sys.exit()
 
     def returntozero(self):
-        for motor in [pv.gonio_y, pv.gonio_z, pv.stage_x, pv.omega]:
+        for motor in [pv.gonio_y, pv.gonio_z, pv.stage_z, pv.omega]:
             ca.caput(motor, 0)
 
     # not currently working
@@ -626,9 +626,9 @@ class Ui_MainWindow(object):
 
     def jogSample(self, direction):
         if direction == "left":
-            ca.caput(pv.stage_x, (float(ca.caget(pv.stage_x_rbv)) - 0.005))
+            ca.caput(pv.stage_z, (float(ca.caget(pv.stage_z_rbv)) + 0.005))
         elif direction == "right":
-            ca.caput(pv.stage_x, (float(ca.caget(pv.stage_x_rbv)) + 0.005))
+            ca.caput(pv.stage_z, (float(ca.caget(pv.stage_z_rbv)) - 0.005))
         elif direction == "up":
             ca.caput(
                 pv.gonio_y,
@@ -660,18 +660,18 @@ class Ui_MainWindow(object):
         x = x * 2
         y = event.pos().y()
         y = y * 2
-        x_curr = float(ca.caget(pv.stage_x_rbv))
+        x_curr = float(ca.caget(pv.stage_z_rbv))
         print(x_curr)
         y_curr = float(ca.caget(pv.gonio_y_rbv))
         z_curr = float(ca.caget(pv.gonio_z_rbv))
         omega = float(ca.caget(pv.omega_rbv))
         print("Clicked", x, y)
-        Xmove = x_curr - ((x - beamX) * calibrate)
+        Xmove = x_curr + ((x - beamX) * calibrate)
         print((x - beamX))
         Ymove = y_curr + (math.sin(math.radians(omega)) * ((y - beamY) * calibrate))
         Zmove = z_curr + (math.cos(math.radians(omega)) * ((y - beamY) * calibrate))
         print("Moving", Xmove, Ymove, Zmove)
-        ca.caput(pv.stage_x, Xmove)
+        ca.caput(pv.stage_z, Xmove)
         ca.caput(pv.gonio_y, Ymove)
         ca.caput(pv.gonio_z, Zmove)
 
