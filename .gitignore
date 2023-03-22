@@ -1,2 +1,6 @@
 ./_pycache_
 ./.*
+bin/__pycache__/control.cpython-38.pyc
+bin/__pycache__/control.cpython-39.pyc
+bin/__pycache__/pv.cpython-38.pyc
+bin/__pycache__/pv.cpython-39.pyc
