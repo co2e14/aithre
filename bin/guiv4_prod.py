@@ -10,6 +10,7 @@ from control import ca
 import pv
 import math
 import sys
+import numpy as np
 
 # Set beam position and scale.
 beamX = 1060
@@ -88,6 +89,22 @@ class Worker2(QThread):
                 allRBVsList += "\u003F"
             self.rbvUpdate.emit(allRBVsList)
             allRBVsList = []
+            
+class BeamlineSafe(QThread):
+    def run(self):
+        self.ThreadActive = True
+        while self.ThreadActive:
+            omeg = np.round(float(ca.caget(pv.omega_rbv)), 1)
+            gony = np.round(float(ca.caget(pv.gonio_y_rbv)), 1)
+            gonz = np.round(float(ca.caget(pv.gonio_z_rbv)), 1)
+            samx = np.round(float(ca.caget(pv.stage_x_rbv)), 1)
+            samz = np.round(float(ca.caget(pv.stage_y_rbv)), 1)
+            if omeg == 0 and gony == 0 and gonz == 0 and samx == 0 and samz == 0:
+                ca.caput(ca.caput(pv.robot_ip16_force_option, "On"))
+            else:
+                ca.caput(ca.caput(pv.robot_ip16_force_option, "No"))
+            
+            
 
 
 # not working yet. Kind of. Ish. Need to have it emit to gui
@@ -589,6 +606,9 @@ class Ui_MainWindow(object):
         # testing camera start stop
         #self.up.clicked.connect(self.showRoboCam)
         #self.down.clicked.connect(self.stopRoboCam)
+        # thread for setting beamline safe
+        bls_thread = BeamlineSafe()
+        bls_thread.start()
 
     def loadNextPin(self):
         ca.caput(pv.robot_next_pin, self.spinToLoad.value())
