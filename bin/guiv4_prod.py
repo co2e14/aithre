@@ -23,7 +23,7 @@ calibrate = 0.00172
 # calibrate = 0.00345
 
 # separate thread for OAV
-class Worker1(QThread):
+class OAVThread(QThread):
     ImageUpdate = pyqtSignal(QImage)
     zoom = 1
 
@@ -37,10 +37,18 @@ class Worker1(QThread):
             ret, frame = cap.read()
             if self.ThreadActive:
                 cv.line(
-                    frame, (beamX - 10, beamY), (beamX + 10, beamY), (0, 255, 0), 2,
+                    frame,
+                    (beamX - 10, beamY),
+                    (beamX + 10, beamY),
+                    (0, 255, 0),
+                    2,
                 )
                 cv.line(
-                    frame, (beamX, beamY - 10), (beamX, beamY + 10), (0, 255, 0), 2,
+                    frame,
+                    (beamX, beamY - 10),
+                    (beamX, beamY + 10),
+                    (0, 255, 0),
+                    2,
                 )
                 # cv.ellipse(frame, (beamX, beamY), (12, 8), 0.0, 0.0, 360, (0,0,255), thickness=2) # could use to draw cut...
                 # cv.putText(frame,'text',bottomLeftCornerOfText, font, fontScale, fontColor, thickness, lineType)
@@ -65,7 +73,7 @@ class Worker1(QThread):
 
 
 # separate thread to run caget for RBVs
-class Worker2(QThread):
+class RBVThread(QThread):
     rbvUpdate = pyqtSignal(list)
 
     def run(self):
@@ -89,8 +97,11 @@ class Worker2(QThread):
                 allRBVsList += "\u003F"
             self.rbvUpdate.emit(allRBVsList)
             allRBVsList = []
-            
-class BeamlineSafe(QThread):
+
+
+class BLSThread(QThread):
+    safe = pyqtSignal(bool)
+
     def run(self):
         self.ThreadActive = True
         while self.ThreadActive:
@@ -100,28 +111,26 @@ class BeamlineSafe(QThread):
             samx = np.round(float(ca.caget(pv.stage_x_rbv)), 1)
             samz = np.round(float(ca.caget(pv.stage_y_rbv)), 1)
             if omeg == 0 and gony == 0 and gonz == 0 and samx == 0 and samz == 0:
-                ca.caput(ca.caput(pv.robot_ip16_force_option, "On"))
+                self.safe.emit(True)
             else:
-                ca.caput(ca.caput(pv.robot_ip16_force_option, "No"))
-            
-            
+                self.safe.emit(False)
 
 
 # not working yet. Kind of. Ish. Need to have it emit to gui
-class Worker3(QThread):
-    def run(self):
-        self.ThreadActive = True
-        cap = cv.VideoCapture("http://ws464.diamond.ac.uk:8080/OAV.mjpg.mjpg")
-        while self.ThreadActive:
-            cv.namedWindow("RoboView")
-            ret, frame = cap.read()
-            if self.ThreadActive:
-                cv.imshow("RoboView", frame)
+# class Worker3(QThread):
+#     def run(self):
+#         self.ThreadActive = True
+#         cap = cv.VideoCapture("http://ws464.diamond.ac.uk:8080/OAV.mjpg.mjpg")
+#         while self.ThreadActive:
+#             cv.namedWindow("RoboView")
+#             ret, frame = cap.read()
+#             if self.ThreadActive:
+#                 cv.imshow("RoboView", frame)
 
-    def stop(self):
-        self.ThreadActive = False
-        cap = cv.VideoCapture("http://i23-lasereye-01.diamond.ac.uk/mjpg/video.mjpg")
-        cap.release()
+#     def stop(self):
+#         self.ThreadActive = False
+#         cap = cv.VideoCapture("http://i23-lasereye-01.diamond.ac.uk/mjpg/video.mjpg")
+#         cap.release()
 
 
 class Ui_MainWindow(object):
@@ -398,7 +407,7 @@ class Ui_MainWindow(object):
         self.spinToLoad.setObjectName("spinToLoad")
         self.robot_grid.addWidget(self.spinToLoad, 3, 1, 1, 1)
         self.gonioSens = QPushButton(self.frameRobot)
-        self.gonioSens.setObjectName(u"gonioSens")
+        self.gonioSens.setObjectName("gonioSens")
         self.gonioSens.setMinimumSize(QSize(30, 30))
         self.gonioSens.setMaximumSize(QSize(30, 30))
         self.gonioSens.setStyleSheet("background-color: red")
@@ -571,14 +580,14 @@ class Ui_MainWindow(object):
         # OAV connections thread
         setZoom = self.zoomSelect.currentText()
         self.setupOAV()
-        th = Worker1()
+        th = OAVThread()
         th.ImageUpdate.connect(self.setImage)
         th.start()
         self.oav_stream.mousePressEvent = self.onMouse
         self.start.clicked.connect(self.oavStart)
         self.stop.clicked.connect(self.oavStop)
         # RBV updating connections thread
-        th2 = Worker2()
+        th2 = RBVThread()
         th2.rbvUpdate.connect(self.updateRBVs)
         th2.start()
         # gonio rotation buttons
@@ -604,11 +613,18 @@ class Ui_MainWindow(object):
         # robot buttons
         self.load.clicked.connect(self.loadNextPin)
         # testing camera start stop
-        #self.up.clicked.connect(self.showRoboCam)
-        #self.down.clicked.connect(self.stopRoboCam)
+        # self.up.clicked.connect(self.showRoboCam)
+        # self.down.clicked.connect(self.stopRoboCam)
         # thread for setting beamline safe
-        bls_thread = BeamlineSafe()
-        bls_thread.start()
+        # bls_thread = BLSThread()
+        # bls_thread.safe.connect(self.updateBLS)
+        # bls_thread.start()
+
+    def updateBLS(self, safe=False):
+        if safe:
+            ca.caput(ca.caput(pv.robot_ip16_force_option, "On"))
+        else:
+            ca.caput(ca.caput(pv.robot_ip16_force_option, "No"))
 
     def loadNextPin(self):
         ca.caput(pv.robot_next_pin, self.spinToLoad.value())
@@ -620,13 +636,13 @@ class Ui_MainWindow(object):
     def dryGripper(self):
         ca.caput(pv.robot_proc_dry, 1)
 
-    def showRoboCam(self):
-        th3 = Worker3()
-        th3.run()
+    # def showRoboCam(self):
+    #     th3 = Worker3()
+    #     th3.run()
 
-    def stopRoboCam(self):
-        th3 = Worker3()
-        th3.stop()
+    # def stopRoboCam(self):
+    #     th3 = Worker3()
+    #     th3.stop()
 
     def quit(self):
         sys.exit()
