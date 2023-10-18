@@ -1,4 +1,4 @@
-#!/dls/science/groups/i23/pyenvs/ctrl_conda/bin/python
+#!/dls/science/groups/i23/pyenvs/aithreconda/bin/python
 
 # C Orr 2022
 from PyQt5.QtCore import *
@@ -32,7 +32,7 @@ class OAVThread(QThread):
 
     def run(self):
         self.ThreadActive = True
-        cap = cv.VideoCapture("http://ws464.diamond.ac.uk:8080/OAV.mjpg.mjpg")
+        cap = cv.VideoCapture("http://bl23i-ea-serv-01.diamond.ac.uk:8080/OAV.mjpg.mjpg")
         while self.ThreadActive:
             ret, frame = cap.read()
             if self.ThreadActive:
