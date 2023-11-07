@@ -44,6 +44,7 @@ omega_rbv = "LA18L-MO-LSR-01:OMEGA.RBV"
 omega_tws = "LA18L-MO-LSR-01:OMEGA.TWV"
 omega_tw_f = "LA18L-MO-LSR-01:OMEGA.TWF"
 omega_tw_r = "LA18L-MO-LSR-01:OMEGA.TWR"
+omega_velo = "LA18L-MO-LSR-01:OMEGA.VELO"
 
 # OAV
 oav_acquire = "LA18L-DI-OAV-01:CAM:Acquire"
@@ -78,3 +79,6 @@ robot_proc_load = "LA18L-MO-ROBOT-01:LOAD.PROC"
 robot_proc_dry = "LA18L-MO-ROBOT-01:DRY.PROC"
 robot_gripper_temp = "LA18L-MO-ROBOT-01:GRIPPER_TEMP"
 robot_ip16_force_option = "LA18L-MO-ROBOT-01:IP_16_FORCE_OPTION"
+
+#fake zoom pv
+zoom_dud = "LA18L-DI-ZOOM-01:IDONTEXIST"
