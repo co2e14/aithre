@@ -46,7 +46,7 @@ class ca:
         check = Popen(["cainfo", pv], stdout=PIPE, stderr=PIPE)
         check_stdout, check_stderr = check.communicate()
         if check_stdout.split()[11].decode("ascii") == "DBF_CHAR":
-            a = Popen(["caput", "-S", pv, str(new_val)], stdout=PIPE, stderr=PIPE3)
+            a = Popen(["caput", "-S", pv, str(new_val)], stdout=PIPE, stderr=PIPE)
             a_stdout, a_stderr = a.communicate()
         else:
             a = Popen(["caput", pv, str(new_val)], stdout=PIPE, stderr=PIPE)

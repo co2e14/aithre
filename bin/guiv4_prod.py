@@ -11,10 +11,14 @@ import pv
 import math
 import sys
 import numpy as np
+import time
 
 # Set beam position and scale.
-beamX = 1060
-beamY = 717
+line_width = 1
+line_spacing = 60
+line_color = (164, 164, 164)
+beamX = 1155
+beamY = 718
 # div 2 if using Qt gui as its half size
 
 
@@ -36,6 +40,11 @@ class OAVThread(QThread):
         while self.ThreadActive:
             ret, frame = cap.read()
             if self.ThreadActive:
+                for i in range(14, frame.shape[1], line_spacing):
+                    cv.line(frame, (i, 0), (i, frame.shape[0]), line_color, line_width)
+                for i in range(beamY % line_spacing, frame.shape[0], line_spacing):
+                    cv.line(frame, (0, i), (frame.shape[1], i), line_color, line_width)
+                
                 cv.line(
                     frame,
                     (beamX - 10, beamY),
@@ -50,7 +59,7 @@ class OAVThread(QThread):
                     (0, 255, 0),
                     2,
                 )
-                # cv.ellipse(frame, (beamX, beamY), (12, 8), 0.0, 0.0, 360, (0,0,255), thickness=2) # could use to draw cut...
+               # cv.ellipse(frame, (beamX, beamY), (12, 8), 0.0, 0.0, 360, (0,0,255), thickness=2) # could use to draw cut...
                 # cv.putText(frame,'text',bottomLeftCornerOfText, font, fontScale, fontColor, thickness, lineType)
                 rgbImage = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
                 convertToQtFormat = QtGui.QImage(
@@ -70,7 +79,18 @@ class OAVThread(QThread):
     def stop(self):
         self.ThreadActive = False
         self.quit()
+        
+# class BLSThread(QThread):
+#     safe = pyqtSignal(bool)
 
+#     def run(self):
+#         self.ThreadActive = True
+#         while self.ThreadActive:
+#             time.sleep(5)
+#             for rbv in [pv.omega_rbv, pv.gonio_y_rbv, pv.gonio_z_rbv, pv.stage_x_rbv, pv.stage_y_rbv]: 
+#                 if round(float(ca.caget(rbv)), 1) == 0.0:
+#                     safe = True
+#             self.safe.emit(safe)
 
 # separate thread to run caget for RBVs
 class RBVThread(QThread):
@@ -79,6 +99,7 @@ class RBVThread(QThread):
     def run(self):
         self.ThreadActive = True
         while self.ThreadActive:
+            time.sleep(0.5)
             allRBVsList = []
             allRBVsList += [str(ca.caget(pv.stage_z_rbv))]
             allRBVsList += [str(ca.caget(pv.gonio_y_rbv))]
@@ -95,25 +116,10 @@ class RBVThread(QThread):
                 allRBVsList += "\u274C"
             else:
                 allRBVsList += "\u003F"
+            allRBVsList += [str(ca.caget(pv.stage_x_rbv))]
+            allRBVsList += [str(ca.caget(pv.stage_y_rbv))]
             self.rbvUpdate.emit(allRBVsList)
             allRBVsList = []
-
-
-class BLSThread(QThread):
-    safe = pyqtSignal(bool)
-
-    def run(self):
-        self.ThreadActive = True
-        while self.ThreadActive:
-            omeg = np.round(float(ca.caget(pv.omega_rbv)), 1)
-            gony = np.round(float(ca.caget(pv.gonio_y_rbv)), 1)
-            gonz = np.round(float(ca.caget(pv.gonio_z_rbv)), 1)
-            samx = np.round(float(ca.caget(pv.stage_x_rbv)), 1)
-            samz = np.round(float(ca.caget(pv.stage_y_rbv)), 1)
-            if omeg == 0 and gony == 0 and gonz == 0 and samx == 0 and samz == 0:
-                self.safe.emit(True)
-            else:
-                self.safe.emit(False)
 
 
 # not working yet. Kind of. Ish. Need to have it emit to gui
@@ -191,9 +197,9 @@ class Ui_MainWindow(object):
         self.gonz_request.setMaxLength(5)
         self.gonz_request.setObjectName("gonz_request")
         self.readback_grid.addWidget(self.gonz_request, 5, 3, 1, 1)
-        self.stagex_rbv = QtWidgets.QLabel(self.frameFineControl)
-        self.stagex_rbv.setObjectName("stagex_rbv")
-        self.readback_grid.addWidget(self.stagex_rbv, 3, 1, 1, 1)
+        self.stagez_rbv = QtWidgets.QLabel(self.frameFineControl)
+        self.stagez_rbv.setObjectName("stagez_rbv")
+        self.readback_grid.addWidget(self.stagez_rbv, 3, 1, 1, 1)
         self.labExposure = QtWidgets.QLabel(self.frameFineControl)
         self.labExposure.setObjectName("labExposure")
         self.readback_grid.addWidget(self.labExposure, 1, 0, 1, 1)
@@ -227,11 +233,11 @@ class Ui_MainWindow(object):
         self.omega_request.setMaxLength(5)
         self.omega_request.setObjectName("omega_request")
         self.readback_grid.addWidget(self.omega_request, 7, 3, 1, 1)
-        self.stagex_request = QtWidgets.QLineEdit(self.frameFineControl)
-        self.stagex_request.setText("")
-        self.stagex_request.setMaxLength(5)
-        self.stagex_request.setObjectName("stagex_request")
-        self.readback_grid.addWidget(self.stagex_request, 3, 3, 1, 1)
+        self.stagez_request = QtWidgets.QLineEdit(self.frameFineControl)
+        self.stagez_request.setText("")
+        self.stagez_request.setMaxLength(5)
+        self.stagez_request.setObjectName("stagez_request")
+        self.readback_grid.addWidget(self.stagez_request, 3, 3, 1, 1)
         self.gonz_rbv = QtWidgets.QLabel(self.frameFineControl)
         self.gonz_rbv.setObjectName("gonz_rbv")
         self.readback_grid.addWidget(self.gonz_rbv, 5, 1, 1, 1)
@@ -503,8 +509,8 @@ class Ui_MainWindow(object):
         MainWindow.setTabOrder(self.start, self.stop)
         MainWindow.setTabOrder(self.stop, self.sliderExposure)
         MainWindow.setTabOrder(self.sliderExposure, self.sliderGain)
-        MainWindow.setTabOrder(self.sliderGain, self.stagex_request)
-        MainWindow.setTabOrder(self.stagex_request, self.gony_request)
+        MainWindow.setTabOrder(self.sliderGain, self.stagez_request)
+        MainWindow.setTabOrder(self.stagez_request, self.gony_request)
         MainWindow.setTabOrder(self.gony_request, self.gonz_request)
         MainWindow.setTabOrder(self.gonz_request, self.omega_request)
         MainWindow.setTabOrder(self.omega_request, self.up)
@@ -525,7 +531,7 @@ class Ui_MainWindow(object):
         self.gony_rbv.setText(_translate("MainWindow", "0.12"))
         self.labZoom.setText(_translate("MainWindow", "Zoom"))
         self.labGain.setText(_translate("MainWindow", "Gain"))
-        self.stagex_rbv.setText(_translate("MainWindow", "0.352"))
+        self.stagez_rbv.setText(_translate("MainWindow", "0.352"))
         self.labExposure.setText(_translate("MainWindow", "Exposure"))
         self.zoomSelect.setCurrentText(_translate("MainWindow", "1"))
         self.zoomSelect.setItemText(0, _translate("MainWindow", "1"))
@@ -590,6 +596,9 @@ class Ui_MainWindow(object):
         th2 = RBVThread()
         th2.rbvUpdate.connect(self.updateRBVs)
         th2.start()
+        # bls_thread = BLSThread()
+        # bls_thread.safe.connect(self.updateBLS)
+        # bls_thread.start()
         # gonio rotation buttons
         self.minus180.clicked.connect(lambda: self.gonioRotate(-180))
         self.plus180.clicked.connect(lambda: self.gonioRotate(180))
@@ -620,20 +629,25 @@ class Ui_MainWindow(object):
         # bls_thread.safe.connect(self.updateBLS)
         # bls_thread.start()
 
-    def updateBLS(self, safe=False):
-        if safe:
-            ca.caput(ca.caput(pv.robot_ip16_force_option, "On"))
-        else:
-            ca.caput(ca.caput(pv.robot_ip16_force_option, "No"))
+    # def updateBLS(self, safe):
+    #     print(safe)
+        # print(self.safe)
+        # if self.safe == 1:
+        #     ca.caput(ca.caput(pv.robot_ip16_force_option, "On"))
+        # else:
+        #     ca.caput(ca.caput(pv.robot_ip16_force_option, "No"))
 
     def loadNextPin(self):
+        ca.caput(pv.robot_reset, 1)
         ca.caput(pv.robot_next_pin, self.spinToLoad.value())
         ca.caput(pv.robot_proc_load, 1)
 
     def unloadPin(self):
+        ca.caput(pv.robot_reset, 1)
         ca.caput(pv.robot_proc_unload, 1)
 
     def dryGripper(self):
+        ca.caput(pv.robot_reset, 1)
         ca.caput(pv.robot_proc_dry, 1)
 
     # def showRoboCam(self):
@@ -746,18 +760,24 @@ class Ui_MainWindow(object):
         ca.caput(pv.omega, gonio_request)
 
     def updateRBVs(self, rbvs):
-        # stagex, gony, gonz, omega, oavexp, oavgain, currentsamp, goniosens
-        self.stagex_rbv.setText(str(round(float(rbvs[0]), 3)))
+        # stagez, gony, gonz, omega, oavexp, oavgain, currentsamp, goniosens, stagex, stagey
+        self.stagez_rbv.setText(str(round(float(rbvs[0]), 3))) # used to be x now is z
         self.gony_rbv.setText(str(round(float(rbvs[1]), 3)))
         self.gonz_rbv.setText(str(round(float(rbvs[2]), 3)))
         self.omega_rbv.setText(str(round(float(rbvs[3]), 0)))
         self.exposure_rbv.setText(str(round(float(rbvs[4]), 3)))
         self.gain_rbv.setText(str(int(rbvs[5])))
         self.currentSamp.setText(str(rbvs[6]))
+        blsafe = all(round(float(rbvs[x]), 3) == 0.00 for x in [0, 1, 2, 3, 8, 9])
+        if blsafe:
+            ca.caput(pv.robot_ip16_force_option, "On")
+        else:
+            ca.caput(pv.robot_ip16_force_option, "No")
         if ca.caget(pv.robot_pin_mounted) == "Yes":
             self.gonioSens.setStyleSheet("background-color: green")
         else:
             self.gonioSens.setStyleSheet("background-color: white")
+
 
 
 if __name__ == "__main__":
