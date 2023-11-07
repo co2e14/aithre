@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1090</width>
-    <height>845</height>
+    <width>1004</width>
+    <height>855</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -64,7 +64,7 @@
       </property>
       <layout class="QGridLayout" name="readback_grid">
        <item row="3" column="0">
-        <widget class="QLabel" name="labX">
+        <widget class="QLabel" name="labstageZ">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>0</horstretch>
@@ -72,7 +72,7 @@
           </sizepolicy>
          </property>
          <property name="text">
-          <string>X</string>
+          <string>Stage Z</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -87,7 +87,7 @@
         </widget>
        </item>
        <item row="3" column="3">
-        <widget class="QLineEdit" name="stagex_request">
+        <widget class="QLineEdit" name="stagez_request">
          <property name="text">
           <string/>
          </property>
@@ -168,7 +168,7 @@
         </widget>
        </item>
        <item row="3" column="1">
-        <widget class="QLabel" name="stagex_rbv">
+        <widget class="QLabel" name="stagez_rbv">
          <property name="text">
           <string>0.352</string>
          </property>
@@ -650,7 +650,7 @@
         </widget>
        </item>
        <item row="4" column="1">
-        <widget class="QPushButton" name="plu15">
+        <widget class="QPushButton" name="plus15">
          <property name="text">
           <string>+15</string>
          </property>
@@ -852,7 +852,23 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="0" colspan="5">
+    <item row="3" column="1">
+     <spacer name="horizontalSpacer">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="sizeType">
+       <enum>QSizePolicy::Minimum</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>40</width>
+        <height>20</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+    <item row="0" column="0" rowspan="2" colspan="3">
      <widget class="QLabel" name="oav_stream">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
@@ -862,14 +878,20 @@
       </property>
       <property name="minimumSize">
        <size>
-        <width>200</width>
-        <height>200</height>
+        <width>206</width>
+        <height>154</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
-        <width>2000</width>
-        <height>2000</height>
+        <width>2064</width>
+        <height>1544</height>
+       </size>
+      </property>
+      <property name="sizeIncrement">
+       <size>
+        <width>4</width>
+        <height>3</height>
        </size>
       </property>
       <property name="frameShape">
@@ -892,22 +914,6 @@
       </property>
      </widget>
     </item>
-    <item row="3" column="1">
-     <spacer name="horizontalSpacer">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-      <property name="sizeType">
-       <enum>QSizePolicy::Minimum</enum>
-      </property>
-      <property name="sizeHint" stdset="0">
-       <size>
-        <width>40</width>
-        <height>20</height>
-       </size>
-      </property>
-     </spacer>
-    </item>
    </layout>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -916,7 +922,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1090</width>
+     <width>1004</width>
      <height>21</height>
     </rect>
    </property>
@@ -973,7 +979,7 @@
   <tabstop>stop</tabstop>
   <tabstop>sliderExposure</tabstop>
   <tabstop>sliderGain</tabstop>
-  <tabstop>stagex_request</tabstop>
+  <tabstop>stagez_request</tabstop>
   <tabstop>gony_request</tabstop>
   <tabstop>gonz_request</tabstop>
   <tabstop>omega_request</tabstop>
