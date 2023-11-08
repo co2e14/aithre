@@ -714,7 +714,7 @@ class Ui_MainWindow(object):
         self.left.clicked.connect(lambda: self.jogSample("left"))
         self.right.clicked.connect(lambda: self.jogSample("right"))
         self.pushButtonSampleIn.clicked.connect(lambda: self.jogSample("in"))
-        self.pushButtonSampleOut.clicked.connect(lambda: self.jobSaple("out"))
+        self.pushButtonSampleOut.clicked.connect(lambda: self.jogSample("out"))
         # exposure and gain sliders
         #self.zoomSelect.currentIndexChanged.connect(self.setZoom)
         self.sliderExposure.valueChanged.connect(self.changeExposureGain)
