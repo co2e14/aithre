@@ -12,6 +12,7 @@ import math
 import sys
 import numpy as np
 import time
+import os
 
 # Set beam position and scale.
 version = "4.2.3"
@@ -101,7 +102,6 @@ class RBVThread(QThread):
     def run(self):
         self.ThreadActive = True
         while self.ThreadActive:
-            time.sleep(0.3)
             allRBVsList = []
             allRBVsList += [str(ca.caget(pv.stage_z_rbv))]
             allRBVsList += [str(ca.caget(pv.gonio_y_rbv))]
@@ -129,7 +129,6 @@ class robotCheckThread(QThread):
     def run(self):
         self.ThreadActive = True
         while self.ThreadActive:
-            time.sleep(2)
             robotUpdateList = []
             robotUpdateList += [str(ca.caget(pv.robot_prog_running))]
             self.robotUpdate.emit(robotUpdateList)
@@ -892,12 +891,32 @@ class Ui_MainWindow(object):
         
     def saveSnapshot(self):
         image = self.image
+        print(f"Q image format: {image.format()}")
+        print(f"Q image bytes: {image.byteCount()}")
+        print(f"Q image bytes per line: {image.bytesPerLine()}")
+        width = image.width()
+        height = image.height()
+        bytesPerLine = image.bytesPerLine()
+        data = image.bits().asstring(height * bytesPerLine)
+
+    # Create a numpy array from the QImage data
+        arr = np.frombuffer(data, dtype=np.uint8).reshape((height, width, 3))
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        file_name, _ = QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()","","JPEG Files (*.jpg);;All Files (*)", options=options)
+        file_name, _ = QFileDialog.getSaveFileName(self.centralwidget,"QFileDialog.getSaveFileName()","","JPEG Files (*.jpg);;All Files (*)", options=options)
         
         if file_name:
-            cv.imwrite(file_name, image)
+            _, file_extension = os.path.splitext(file_name)
+            if not file_extension:
+                file_name += ".jpg"
+            try:
+                result = cv.imwrite(file_name, arr)
+                if result:
+                    print("Image saved successfully.")
+                else:
+                    print("Failed to save image. Try as a .jpg")
+            except Exception as e:
+                print(f"An error occurred while saving the image: {e}")
 
     def gonioRotate(self, amount):
         gonio_current = float(ca.caget(pv.omega_rbv))

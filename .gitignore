@@ -4,3 +4,9 @@ bin/__pycache__/control.cpython-38.pyc
 bin/__pycache__/control.cpython-39.pyc
 bin/__pycache__/pv.cpython-38.pyc
 bin/__pycache__/pv.cpython-39.pyc
+bin/guiv4_prod.py
+test.ui
+.vscode/settings.json
+bin/test.jpg
+test.py
+.vscode/settings.json
