@@ -42,7 +42,6 @@ class OAVThread(QThread):
         while self.ThreadActive:
             ret, frame = cap.read()
             if self.ThreadActive:
-                time.sleep(0.2)
                 for i in range(14, frame.shape[1], line_spacing):
                     cv.line(frame, (i, 0), (i, frame.shape[0]), line_color, line_width)
                 for i in range(beamY % line_spacing, frame.shape[0], line_spacing):
