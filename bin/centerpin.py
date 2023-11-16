@@ -1,6 +1,6 @@
 import cv2 as cv
 import numpy as np
-from control import ca
+from emerita.control import ca
 import pv
 import time
 import matplotlib.pyplot as plt
