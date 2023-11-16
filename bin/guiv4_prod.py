@@ -20,8 +20,8 @@ version = "4.2.3"
 line_width = 1
 line_spacing = 60
 line_color = (164, 164, 164)
-beamX = 1155
-beamY = 718
+beamX = 1038
+beamY = 763
 # div 2 if using Qt gui as its half size
 
 
@@ -39,7 +39,7 @@ class OAVThread(QThread):
 
     def run(self):
         self.ThreadActive = True
-        cap = cv.VideoCapture("http://bl23i-ea-serv-01.diamond.ac.uk:8080/OAV.mjpg.mjpg")
+        cap = cv.VideoCapture("http://bl23i-ea-serv-01.diamond.ac.uk:8080/OAV2.mjpg.mjpg")
         while self.ThreadActive:
             ret, frame = cap.read()
             if self.ThreadActive:
