@@ -1,12 +1,7 @@
 #!/dls/science/groups/i23/pyenvs/aithreconda/bin/python
 
-# C Orr 2022
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5 import QtCore, QtGui, QtWidgets
+# C Orr 2023
 import cv2 as cv
-from control import ca
 import pv
 import math
 import sys
@@ -14,8 +9,21 @@ import numpy as np
 import time
 import os
 
+os.environ["EPICS_CA_MAX_ARRAY_BYTES"] = "1000000"
+os.environ["EPICS_CA_AUTO_ADDR_LIST"] = "YES"
+os.environ["EPICS_CA_CONN_TMO"] = "30"
+os.environ["EPICS_CA_BEACON_PERIOD"] = "15"
+import cothread
+from cothread.catools import *
+
+cothread.iqt()
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+from PyQt5 import QtCore, QtGui, QtWidgets
+
 # Set beam position and scale.
-version = "4.2.3"
+version = "4.3.3"
 
 line_width = 1
 line_spacing = 60
@@ -29,6 +37,7 @@ beamY = 718
 calibrate = 0.00172
 # calibrate = 0.00345
 
+
 # separate thread for OAV
 class OAVThread(QThread):
     ImageUpdate = pyqtSignal(QImage)
@@ -39,7 +48,9 @@ class OAVThread(QThread):
 
     def run(self):
         self.ThreadActive = True
-        cap = cv.VideoCapture("http://bl23i-ea-serv-01.diamond.ac.uk:8080/OAV.mjpg.mjpg")
+        cap = cv.VideoCapture(
+            "http://bl23i-ea-serv-01.diamond.ac.uk:8080/OAV.mjpg.mjpg"
+        )
         while self.ThreadActive:
             ret, frame = cap.read()
             if self.ThreadActive:
@@ -62,7 +73,7 @@ class OAVThread(QThread):
                     (0, 255, 0),
                     2,
                 )
-               # cv.ellipse(frame, (beamX, beamY), (12, 8), 0.0, 0.0, 360, (0,0,255), thickness=2) # could use to draw cut...
+                # cv.ellipse(frame, (beamX, beamY), (12, 8), 0.0, 0.0, 360, (0,0,255), thickness=2) # could use to draw cut...
                 # cv.putText(frame,'text',bottomLeftCornerOfText, font, fontScale, fontColor, thickness, lineType)
                 rgbImage = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
                 convertToQtFormat = QtGui.QImage(
@@ -83,6 +94,7 @@ class OAVThread(QThread):
         self.ThreadActive = False
         self.quit()
 
+
 # class BLSThread(QThread):
 #     safe = pyqtSignal(bool)
 
@@ -91,9 +103,10 @@ class OAVThread(QThread):
 #         while self.ThreadActive:
 #             time.sleep(5)
 #             for rbv in [pv.omega_rbv, pv.gonio_y_rbv, pv.gonio_z_rbv, pv.stage_x_rbv, pv.stage_y_rbv]:
-#                 if round(float(ca.caget(rbv)), 1) == 0.0:
+#                 if round(float(caget(rbv)), 1) == 0.0:
 #                     safe = True
 #             self.safe.emit(safe)
+
 
 # separate thread to run caget for RBVs
 class RBVThread(QThread):
@@ -103,23 +116,23 @@ class RBVThread(QThread):
         self.ThreadActive = True
         while self.ThreadActive:
             allRBVsList = []
-            allRBVsList += [str(ca.caget(pv.stage_z_rbv))]
-            allRBVsList += [str(ca.caget(pv.gonio_y_rbv))]
-            allRBVsList += [str(ca.caget(pv.gonio_z_rbv))]
-            allRBVsList += [str(ca.caget(pv.omega_rbv))]
-            allRBVsList += [str(ca.caget(pv.oav_cam_acqtime_rbv))]
-            allRBVsList += [str(ca.caget(pv.oav_cam_gain_rbv))]
-            allRBVsList += [str(ca.caget(pv.robot_current_pin_rbv))]
+            allRBVsList += [str(caget(pv.stage_z_rbv))]
+            allRBVsList += [str(caget(pv.gonio_y_rbv))]
+            allRBVsList += [str(caget(pv.gonio_z_rbv))]
+            allRBVsList += [str(caget(pv.omega_rbv))]
+            allRBVsList += [str(caget(pv.oav_cam_acqtime_rbv))]
+            allRBVsList += [str(caget(pv.oav_cam_gain_rbv))]
+            allRBVsList += [str(caget(pv.robot_current_pin_rbv))]
             if (
-                ca.caget(pv.robot_pin_mounted) is True
+                caget(pv.robot_pin_mounted) is True
             ):  # need to work out what this pv returns
                 allRBVsList += "\u2714"
-            elif ca.caget(pv.robot_pin_mounted) is False:
+            elif caget(pv.robot_pin_mounted) is False:
                 allRBVsList += "\u274C"
             else:
                 allRBVsList += "\u003F"
-            allRBVsList += [str(ca.caget(pv.stage_x_rbv))]
-            allRBVsList += [str(ca.caget(pv.stage_y_rbv))]
+            allRBVsList += [str(caget(pv.stage_x_rbv))]
+            allRBVsList += [str(caget(pv.stage_y_rbv))]
             self.rbvUpdate.emit(allRBVsList)
 
 
@@ -130,9 +143,8 @@ class robotCheckThread(QThread):
         self.ThreadActive = True
         while self.ThreadActive:
             robotUpdateList = []
-            robotUpdateList += [str(ca.caget(pv.robot_prog_running))]
+            robotUpdateList += [str(caget(pv.robot_prog_running))]
             self.robotUpdate.emit(robotUpdateList)
-
 
 
 # not working yet. Kind of. Ish. Need to have it emit to gui
@@ -151,7 +163,8 @@ class robotCheckThread(QThread):
 #         cap = cv.VideoCapture("http://i23-lasereye-01.diamond.ac.uk/mjpg/video.mjpg")
 #         cap.release()
 
-        ##### paste new GUI code below here #####
+
+##### paste new GUI code below here #####
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -234,7 +247,9 @@ class Ui_MainWindow(object):
         self.gony_request.setObjectName("gony_request")
         self.readback_grid.addWidget(self.gony_request, 4, 3, 1, 1)
         self.labstageZ = QtWidgets.QLabel(self.frameFineControl)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.labstageZ.sizePolicy().hasHeightForWidth())
@@ -264,12 +279,16 @@ class Ui_MainWindow(object):
         self.labZ.setObjectName("labZ")
         self.readback_grid.addWidget(self.labZ, 5, 0, 1, 1)
         self.gridLayout.addWidget(self.frameFineControl, 3, 2, 1, 1)
-        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        spacerItem = QtWidgets.QSpacerItem(
+            40, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum
+        )
         self.gridLayout.addItem(spacerItem, 3, 3, 1, 1)
         self.start = QtWidgets.QPushButton(self.centralwidget)
         self.start.setObjectName("start")
         self.gridLayout.addWidget(self.start, 2, 0, 1, 1)
-        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        spacerItem1 = QtWidgets.QSpacerItem(
+            40, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum
+        )
         self.gridLayout.addItem(spacerItem1, 3, 1, 1, 1)
         self.frameRobot = QtWidgets.QFrame(self.centralwidget)
         self.frameRobot.setAutoFillBackground(False)
@@ -283,7 +302,9 @@ class Ui_MainWindow(object):
         self.unload.setObjectName("unload")
         self.robot_grid.addWidget(self.unload, 8, 0, 1, 1)
         self.load = QtWidgets.QPushButton(self.frameRobot)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.load.sizePolicy().hasHeightForWidth())
@@ -333,7 +354,9 @@ class Ui_MainWindow(object):
         self.indicatorGonioSensor.setFrameShape(QtWidgets.QFrame.Box)
         self.indicatorGonioSensor.setText("")
         self.indicatorGonioSensor.setScaledContents(False)
-        self.indicatorGonioSensor.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
+        self.indicatorGonioSensor.setAlignment(
+            QtCore.Qt.AlignLeading | QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop
+        )
         self.indicatorGonioSensor.setObjectName("indicatorGonioSensor")
         self.robot_grid.addWidget(self.indicatorGonioSensor, 1, 1, 1, 1)
         self.indicatorOAVIOC = QtWidgets.QLabel(self.frameRobot)
@@ -380,13 +403,22 @@ class Ui_MainWindow(object):
         self.spinToLoad.setMaximum(16)
         self.spinToLoad.setObjectName("spinToLoad")
         self.robot_grid.addWidget(self.spinToLoad, 7, 1, 1, 1)
-        spacerItem2 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding)
+        spacerItem2 = QtWidgets.QSpacerItem(
+            20,
+            40,
+            QtWidgets.QSizePolicy.Minimum,
+            QtWidgets.QSizePolicy.MinimumExpanding,
+        )
         self.robot_grid.addItem(spacerItem2, 3, 0, 1, 2)
         self.labCurrentSamp = QtWidgets.QLabel(self.frameRobot)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.labCurrentSamp.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.labCurrentSamp.sizePolicy().hasHeightForWidth()
+        )
         self.labCurrentSamp.setSizePolicy(sizePolicy)
         self.labCurrentSamp.setAlignment(QtCore.Qt.AlignCenter)
         self.labCurrentSamp.setObjectName("labCurrentSamp")
@@ -396,7 +428,9 @@ class Ui_MainWindow(object):
         self.labMotionIOC.setObjectName("labMotionIOC")
         self.robot_grid.addWidget(self.labMotionIOC, 9, 0, 1, 1)
         self.currentSamp = QtWidgets.QLabel(self.frameRobot)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.currentSamp.sizePolicy().hasHeightForWidth())
@@ -413,7 +447,9 @@ class Ui_MainWindow(object):
         self.stop.setObjectName("stop")
         self.gridLayout.addWidget(self.stop, 2, 2, 1, 1)
         self.oav_stream = QtWidgets.QLabel(self.centralwidget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.oav_stream.sizePolicy().hasHeightForWidth())
@@ -441,7 +477,9 @@ class Ui_MainWindow(object):
         self.motion_grid.setSpacing(5)
         self.motion_grid.setObjectName("motion_grid")
         self.down = QtWidgets.QPushButton(self.framePositionButtons)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.down.sizePolicy().hasHeightForWidth())
@@ -462,7 +500,10 @@ class Ui_MainWindow(object):
         self.plus180.setObjectName("plus180")
         self.motion_grid.addWidget(self.plus180, 6, 3, 1, 1)
         self.left = QtWidgets.QPushButton(self.framePositionButtons)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.MinimumExpanding,
+            QtWidgets.QSizePolicy.MinimumExpanding,
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.left.sizePolicy().hasHeightForWidth())
@@ -487,7 +528,10 @@ class Ui_MainWindow(object):
         self.buttonSlowOmegaTurn.setObjectName("buttonSlowOmegaTurn")
         self.motion_grid.addWidget(self.buttonSlowOmegaTurn, 2, 0, 1, 1)
         self.up = QtWidgets.QPushButton(self.framePositionButtons)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.MinimumExpanding,
+            QtWidgets.QSizePolicy.MinimumExpanding,
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.up.sizePolicy().hasHeightForWidth())
@@ -511,7 +555,10 @@ class Ui_MainWindow(object):
         self.pushButtonSampleIn.setObjectName("pushButtonSampleIn")
         self.motion_grid.addWidget(self.pushButtonSampleIn, 0, 0, 1, 1)
         self.right = QtWidgets.QPushButton(self.framePositionButtons)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.MinimumExpanding,
+            QtWidgets.QSizePolicy.MinimumExpanding,
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.right.sizePolicy().hasHeightForWidth())
@@ -542,10 +589,14 @@ class Ui_MainWindow(object):
         self.motion_grid.addWidget(self.zeroAll, 1, 1, 1, 1)
         self.pushButtonSampleOut = QtWidgets.QPushButton(self.framePositionButtons)
         self.pushButtonSampleOut.setEnabled(True)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pushButtonSampleOut.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.pushButtonSampleOut.sizePolicy().hasHeightForWidth()
+        )
         self.pushButtonSampleOut.setSizePolicy(sizePolicy)
         self.pushButtonSampleOut.setMinimumSize(QtCore.QSize(50, 50))
         self.pushButtonSampleOut.setMaximumSize(QtCore.QSize(50, 50))
@@ -607,7 +658,9 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "Aithre v4.2 - I23 Laser Shaping"))
+        MainWindow.setWindowTitle(
+            _translate("MainWindow", "Aithre v4.2 - I23 Laser Shaping")
+        )
         self.gony_rbv.setText(_translate("MainWindow", "0.12"))
         self.gain_rbv.setText(_translate("MainWindow", "0"))
         self.exposure_rbv.setText(_translate("MainWindow", "0.04"))
@@ -659,8 +712,12 @@ class Ui_MainWindow(object):
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         self.actionSave_log.setText(_translate("MainWindow", "Save log"))
         self.actionRestart_OAV_IOC.setText(_translate("MainWindow", "Restart OAV IOC"))
-        self.actionRestart_Robot_IOC.setText(_translate("MainWindow", "Restart Robot IOC"))
-        self.actionRestart_Gonio_IOC.setText(_translate("MainWindow", "Restart Gonio IOC"))
+        self.actionRestart_Robot_IOC.setText(
+            _translate("MainWindow", "Restart Robot IOC")
+        )
+        self.actionRestart_Gonio_IOC.setText(
+            _translate("MainWindow", "Restart Gonio IOC")
+        )
         ##### paste new GUI code above here #####
         # setup
         self.checkIOCStatus()
@@ -668,13 +725,13 @@ class Ui_MainWindow(object):
         self.actionExit.triggered.connect(self.quit)
         # sliders and sensors
         self.sliderExposure.setProperty(
-            "value", str(round(float(ca.caget(pv.oav_cam_acqtime_rbv)) * 100))
+            "value", str(round(float(caget(pv.oav_cam_acqtime_rbv)) * 100))
         )
         self.sliderGain.setProperty(
-            "value", str(round(float(ca.caget(pv.oav_cam_gain_rbv))))
+            "value", str(round(float(caget(pv.oav_cam_gain_rbv))))
         )
         # OAV connections thread
-        #setZoom = self.zoomSelect.currentText()
+        # setZoom = self.zoomSelect.currentText()
         self.setupOAV()
         th = OAVThread()
         th.ImageUpdate.connect(self.setImage)
@@ -695,8 +752,8 @@ class Ui_MainWindow(object):
         # bls_thread.safe.connect(self.updateBLS)
         # bls_thread.start()
         # gonio rotation buttons
-        self.buttonSlowOmegaTurn.clicked.connect(lambda: ca.caput(pv.omega_velo, 15))
-        self.buttonFastOmegaTurn.clicked.connect(lambda: ca.caput(pv.omega_velo, 150))
+        self.buttonSlowOmegaTurn.clicked.connect(lambda: caput(pv.omega_velo, 15))
+        self.buttonFastOmegaTurn.clicked.connect(lambda: caput(pv.omega_velo, 150))
         self.plusMinus3600.clicked.connect(self.goTopm3600)
         self.minus180.clicked.connect(lambda: self.gonioRotate(-180))
         self.plus180.clicked.connect(lambda: self.gonioRotate(180))
@@ -715,12 +772,12 @@ class Ui_MainWindow(object):
         self.pushButtonSampleIn.clicked.connect(lambda: self.jogSample("in"))
         self.pushButtonSampleOut.clicked.connect(lambda: self.jogSample("out"))
         # exposure and gain sliders
-        #self.zoomSelect.currentIndexChanged.connect(self.setZoom)
+        # self.zoomSelect.currentIndexChanged.connect(self.setZoom)
         self.sliderExposure.valueChanged.connect(self.changeExposureGain)
         self.sliderGain.valueChanged.connect(self.changeExposureGain)
         self.zeroAll.clicked.connect(self.returntozero)
         # robot buttons
-        self.resetRobot.clicked.connect(lambda: ca.caput(pv.robot_reset, 1))
+        self.resetRobot.clicked.connect(lambda: caput(pv.robot_reset, 1))
         self.load.clicked.connect(self.loadNextPin)
         self.unload.clicked.connect(self.unloadPin)
         self.dry.clicked.connect(self.dryGripper)
@@ -735,27 +792,27 @@ class Ui_MainWindow(object):
 
     # def updateBLS(self, safe):
     #     print(safe)
-        # print(self.safe)
-        # if self.safe == 1:
-        #     ca.caput(ca.caput(pv.robot_ip16_force_option, "On"))
-        # else:
-        #     ca.caput(ca.caput(pv.robot_ip16_force_option, "No"))
+    # print(self.safe)
+    # if self.safe == 1:
+    #     caput(caput(pv.robot_ip16_force_option, "On"))
+    # else:
+    #     caput(caput(pv.robot_ip16_force_option, "No"))
 
     def loadNextPin(self):
-        ca.caput(pv.robot_reset, 1)
+        caput(pv.robot_reset, 1)
         time.sleep(1)
-        ca.caput(pv.robot_next_pin, self.spinToLoad.value())
-        ca.caput(pv.robot_proc_load, 1)
+        caput(pv.robot_next_pin, self.spinToLoad.value())
+        caput(pv.robot_proc_load, 1)
 
     def unloadPin(self):
-        ca.caput(pv.robot_reset, 1)
+        caput(pv.robot_reset, 1)
         time.sleep(1)
-        ca.caput(pv.robot_proc_unload, 1)
+        caput(pv.robot_proc_unload, 1)
 
     def dryGripper(self):
-        ca.caput(pv.robot_reset, 1)
+        caput(pv.robot_reset, 1)
         time.sleep(1)
-        ca.caput(pv.robot_proc_dry, 1)
+        caput(pv.robot_proc_dry, 1)
 
     # def showRoboCam(self):
     #     th3 = Worker3()
@@ -770,7 +827,7 @@ class Ui_MainWindow(object):
 
     def returntozero(self):
         for motor in [pv.gonio_y, pv.gonio_z, pv.stage_z, pv.omega]:
-            ca.caput(motor, 0)
+            caput(motor, 0)
 
     # # not currently working
     # def setZoom(self, level):
@@ -778,69 +835,69 @@ class Ui_MainWindow(object):
     #     th.updateZoom(int(setZoom))
 
     def changeExposureGain(self):
-        ca.caput(pv.oav_cam_acqtime, (self.sliderExposure.value() / 100))
-        ca.caput(pv.oav_cam_gain, self.sliderGain.value())
+        caput(pv.oav_cam_acqtime, (self.sliderExposure.value() / 100))
+        caput(pv.oav_cam_gain, self.sliderGain.value())
 
     def jogSample(self, direction):
         if direction == "left":
-            ca.caput(pv.stage_z, (float(ca.caget(pv.stage_z_rbv)) + 0.005))
+            caput(pv.stage_z, (float(caget(pv.stage_z_rbv)) + 0.005))
         elif direction == "right":
-            ca.caput(pv.stage_z, (float(ca.caget(pv.stage_z_rbv)) - 0.005))
+            caput(pv.stage_z, (float(caget(pv.stage_z_rbv)) - 0.005))
         elif direction == "up":
-            ca.caput(
+            caput(
                 pv.gonio_y,
-                (float(ca.caget(pv.gonio_y_rbv)))
-                + ((math.sin(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.005,
+                (float(caget(pv.gonio_y_rbv)))
+                + ((math.sin(math.radians(float(caget(pv.omega_rbv)))))) * 0.005,
             )
-            ca.caput(
+            caput(
                 pv.gonio_z,
-                (float(ca.caget(pv.gonio_z_rbv)))
-                + ((math.cos(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.005,
+                (float(caget(pv.gonio_z_rbv)))
+                + ((math.cos(math.radians(float(caget(pv.omega_rbv)))))) * 0.005,
             )
         elif direction == "down":
-            ca.caput(
+            caput(
                 pv.gonio_y,
-                (float(ca.caget(pv.gonio_y_rbv)))
-                - ((math.sin(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.005,
+                (float(caget(pv.gonio_y_rbv)))
+                - ((math.sin(math.radians(float(caget(pv.omega_rbv)))))) * 0.005,
             )
-            ca.caput(
+            caput(
                 pv.gonio_z,
-                (float(ca.caget(pv.gonio_z_rbv)))
-                - ((math.cos(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.005,
+                (float(caget(pv.gonio_z_rbv)))
+                - ((math.cos(math.radians(float(caget(pv.omega_rbv)))))) * 0.005,
             )
         elif direction == "in":
-            ca.caput(
+            caput(
                 pv.gonio_y,
-                (float(ca.caget(pv.gonio_y_rbv)))
-                - ((math.cos(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
+                (float(caget(pv.gonio_y_rbv)))
+                - ((math.cos(math.radians(float(caget(pv.omega_rbv)))))) * 0.05,
             )
-            ca.caput(
+            caput(
                 pv.gonio_z,
-                (float(ca.caget(pv.gonio_z_rbv)))
-                - ((math.sin(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
+                (float(caget(pv.gonio_z_rbv)))
+                - ((math.sin(math.radians(float(caget(pv.omega_rbv)))))) * 0.05,
             )
         elif direction == "out":
-            ca.caput(
+            caput(
                 pv.gonio_y,
-                (float(ca.caget(pv.gonio_y_rbv)))
-                + ((math.cos(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
+                (float(caget(pv.gonio_y_rbv)))
+                + ((math.cos(math.radians(float(caget(pv.omega_rbv)))))) * 0.05,
             )
-            ca.caput(
+            caput(
                 pv.gonio_z,
-                (float(ca.caget(pv.gonio_z_rbv)))
-                + ((math.sin(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
+                (float(caget(pv.gonio_z_rbv)))
+                + ((math.sin(math.radians(float(caget(pv.omega_rbv)))))) * 0.05,
             )
         else:
             pass
 
     def goTopm3600(self):
-        gonio_current = float(ca.caget(pv.omega_rbv))
+        gonio_current = float(caget(pv.omega_rbv))
         if gonio_current <= 0:
             gonio_request = 3600
         else:
             gonio_request = -3600
         print("Moving gonio omega to", str(gonio_request))
-        ca.caput(pv.omega, gonio_request)
+        caput(pv.omega, gonio_request)
 
     # moving sample to beam centre when clicked
     def onMouse(self, event):
@@ -848,20 +905,20 @@ class Ui_MainWindow(object):
         x = x * 2
         y = event.pos().y()
         y = y * 2
-        x_curr = float(ca.caget(pv.stage_z_rbv))
+        x_curr = float(caget(pv.stage_z_rbv))
         print(x_curr)
-        y_curr = float(ca.caget(pv.gonio_y_rbv))
-        z_curr = float(ca.caget(pv.gonio_z_rbv))
-        omega = float(ca.caget(pv.omega_rbv))
+        y_curr = float(caget(pv.gonio_y_rbv))
+        z_curr = float(caget(pv.gonio_z_rbv))
+        omega = float(caget(pv.omega_rbv))
         print("Clicked", x, y)
         Xmove = x_curr + ((x - beamX) * calibrate)
         print((x - beamX))
         Ymove = y_curr + (math.sin(math.radians(omega)) * ((y - beamY) * calibrate))
         Zmove = z_curr + (math.cos(math.radians(omega)) * ((y - beamY) * calibrate))
         print("Moving", Xmove, Ymove, Zmove)
-        ca.caput(pv.stage_z, Xmove)
-        ca.caput(pv.gonio_y, Ymove)
-        ca.caput(pv.gonio_z, Zmove)
+        caput(pv.stage_z, Xmove)
+        caput(pv.gonio_y, Ymove)
+        caput(pv.gonio_z, Zmove)
 
     def setupOAV(self):
         for callback in (
@@ -875,20 +932,20 @@ class Ui_MainWindow(object):
             pv.oav_hdf5_ecb,
             pv.oav_pva_ecb,
         ):
-            ca.caput(callback, "Disable")
-        ca.caput(pv.oav_mjpg_maxw, 2064)
-        ca.caput(pv.oav_mjpg_maxh, 1544)
+            caput(callback, "Disable")
+        caput(pv.oav_mjpg_maxw, 2064)
+        caput(pv.oav_mjpg_maxh, 1544)
 
     def oavStart(self):
-        ca.caput(pv.oav_acquire, "Acquire")
+        caput(pv.oav_acquire, "Acquire")
 
     def oavStop(self):
-        ca.caput(pv.oav_acquire, "Done")
+        caput(pv.oav_acquire, "Done")
 
     def setImage(self, image):
         self.image = image
         self.oav_stream.setPixmap(QPixmap.fromImage(image))
-        
+
     def saveSnapshot(self):
         image = self.image
         print(f"Q image format: {image.format()}")
@@ -899,12 +956,18 @@ class Ui_MainWindow(object):
         bytesPerLine = image.bytesPerLine()
         data = image.bits().asstring(height * bytesPerLine)
 
-    # Create a numpy array from the QImage data
+        # Create a numpy array from the QImage data
         arr = np.frombuffer(data, dtype=np.uint8).reshape((height, width, 3))
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        file_name, _ = QFileDialog.getSaveFileName(self.centralwidget,"QFileDialog.getSaveFileName()","","JPEG Files (*.jpg);;All Files (*)", options=options)
-        
+        file_name, _ = QFileDialog.getSaveFileName(
+            self.centralwidget,
+            "QFileDialog.getSaveFileName()",
+            "",
+            "JPEG Files (*.jpg);;All Files (*)",
+            options=options,
+        )
+
         if file_name:
             _, file_extension = os.path.splitext(file_name)
             if not file_extension:
@@ -919,17 +982,17 @@ class Ui_MainWindow(object):
                 print(f"An error occurred while saving the image: {e}")
 
     def gonioRotate(self, amount):
-        gonio_current = float(ca.caget(pv.omega_rbv))
+        gonio_current = float(caget(pv.omega_rbv))
         if amount == 0:
             gonio_request = 0
         else:
             gonio_request = gonio_current + amount
         print("Moving gonio omega to", str(gonio_request))
-        ca.caput(pv.omega, gonio_request)
+        caput(pv.omega, gonio_request)
 
     def updateRBVs(self, rbvs):
         # stagez, gony, gonz, omega, oavexp, oavgain, currentsamp, goniosens, stagex, stagey
-        self.stagez_rbv.setText(str(round(float(rbvs[0]), 3))) # used to be x now is z
+        self.stagez_rbv.setText(str(round(float(rbvs[0]), 3)))  # used to be x now is z
         self.gony_rbv.setText(str(round(float(rbvs[1]), 3)))
         self.gonz_rbv.setText(str(round(float(rbvs[2]), 3)))
         # stop -0.0 to 0.0 jitter on GUI
@@ -942,12 +1005,12 @@ class Ui_MainWindow(object):
         self.currentSamp.setText(str(rbvs[6]))
         blsafe = all(round(float(rbvs[x]), 3) == 0.00 for x in [0, 1, 2, 3, 8, 9])
         if blsafe:
-            ca.caput(pv.robot_ip16_force_option, "On")
+            caput(pv.robot_ip16_force_option, "On")
             self.indicatorBeamlineSafe.setStyleSheet("background-color: green")
         else:
-            ca.caput(pv.robot_ip16_force_option, "No")
+            caput(pv.robot_ip16_force_option, "No")
             self.indicatorBeamlineSafe.setStyleSheet("background-color: red")
-        if ca.caget(pv.robot_pin_mounted) == "Yes":
+        if caget(pv.robot_pin_mounted) == "Yes":
             self.indicatorGonioSensor.setStyleSheet("background-color: green")
         else:
             self.indicatorGonioSensor.setStyleSheet("background-color: red")
@@ -960,23 +1023,23 @@ class Ui_MainWindow(object):
 
     def checkIOCStatus(self):
         try:
-            ca.caget(pv.omega_rbv)
+            caget(pv.omega_rbv)
             self.indicatorMotionIOC.setStyleSheet("background-color: green")
         except:
             self.indicatorMotionIOC.setStyleSheet("background-color: red")
         try:
-            ca.caget(pv.oav_cam_gain_rbv)
+            caget(pv.oav_cam_gain_rbv)
             self.indicatorOAVIOC.setStyleSheet("background-color: green")
         except:
             self.indicatorOAVIOC.setStyleSheet("background-color: red")
         try:
-            ca.caget(pv.robot_next_pin_rbv)
+            caget(pv.robot_next_pin_rbv)
             self.indicatorRobotIOC.setStyleSheet("background-color: green")
         except:
             self.indicatorRobotIOC.setStyleSheet("background-color: red")
         self.indicatorZoomIOC.setStyleSheet("background-color: red")
         # try:
-        #     ca.caget(pv.zoom_dud)
+        #     caget(pv.zoom_dud)
         # except:
         #     print("no zoom?")
         # need to figure out a way for this to not loop trying to find the dud PV.
