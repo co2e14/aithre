@@ -39,7 +39,7 @@ class OAVThread(QThread):
 
     def run(self):
         self.ThreadActive = True
-        cap = cv.VideoCapture("http://bl23i-ea-serv-01.diamond.ac.uk:8080/OAV2.mjpg.mjpg")
+        cap = cv.VideoCapture("http://bl23i-ea-serv-01.diamond.ac.uk:8080/OAV.mjpg.mjpg")
         while self.ThreadActive:
             ret, frame = cap.read()
             if self.ThreadActive:
