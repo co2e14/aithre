@@ -13,10 +13,8 @@ os.environ["EPICS_CA_MAX_ARRAY_BYTES"] = "1000000"
 os.environ["EPICS_CA_AUTO_ADDR_LIST"] = "YES"
 os.environ["EPICS_CA_CONN_TMO"] = "30"
 os.environ["EPICS_CA_BEACON_PERIOD"] = "15"
-import cothread
-from cothread.catools import *
+from aioca import caget, caput, camonitor
 
-cothread.iqt()
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -112,38 +110,38 @@ class OAVThread(QThread):
 class RBVThread(QThread):
     rbvUpdate = pyqtSignal(list)
 
-    def run(self):
+    async def run(self):
         self.ThreadActive = True
         while self.ThreadActive:
             allRBVsList = []
-            allRBVsList += [str(caget(pv.stage_z_rbv))]
-            allRBVsList += [str(caget(pv.gonio_y_rbv))]
-            allRBVsList += [str(caget(pv.gonio_z_rbv))]
-            allRBVsList += [str(caget(pv.omega_rbv))]
-            allRBVsList += [str(caget(pv.oav_cam_acqtime_rbv))]
-            allRBVsList += [str(caget(pv.oav_cam_gain_rbv))]
-            allRBVsList += [str(caget(pv.robot_current_pin_rbv))]
+            allRBVsList += [str(await caget(pv.stage_z_rbv))]
+            allRBVsList += [str(await caget(pv.gonio_y_rbv))]
+            allRBVsList += [str(await caget(pv.gonio_z_rbv))]
+            allRBVsList += [str(await caget(pv.omega_rbv))]
+            allRBVsList += [str(await caget(pv.oav_cam_acqtime_rbv))]
+            allRBVsList += [str(await caget(pv.oav_cam_gain_rbv))]
+            allRBVsList += [str(await caget(pv.robot_current_pin_rbv))]
             if (
-                caget(pv.robot_pin_mounted) is True
+                await caget(pv.robot_pin_mounted) is True
             ):  # need to work out what this pv returns
                 allRBVsList += "\u2714"
-            elif caget(pv.robot_pin_mounted) is False:
+            elif await caget(pv.robot_pin_mounted) is False:
                 allRBVsList += "\u274C"
             else:
                 allRBVsList += "\u003F"
-            allRBVsList += [str(caget(pv.stage_x_rbv))]
-            allRBVsList += [str(caget(pv.stage_y_rbv))]
+            allRBVsList += [str(await caget(pv.stage_x_rbv))]
+            allRBVsList += [str(await caget(pv.stage_y_rbv))]
             self.rbvUpdate.emit(allRBVsList)
 
 
 class robotCheckThread(QThread):
     robotUpdate = pyqtSignal(list)
 
-    def run(self):
+    async def run(self):
         self.ThreadActive = True
         while self.ThreadActive:
             robotUpdateList = []
-            robotUpdateList += [str(caget(pv.robot_prog_running))]
+            robotUpdateList += [str(await caget(pv.robot_prog_running))]
             self.robotUpdate.emit(robotUpdateList)
 
 
@@ -158,7 +156,7 @@ class robotCheckThread(QThread):
 #             if self.ThreadActive:
 #                 cv.imshow("RoboView", frame)
 
-#     def stop(self):
+#     async def stop(self):
 #         self.ThreadActive = False
 #         cap = cv.VideoCapture("http://i23-lasereye-01.diamond.ac.uk/mjpg/video.mjpg")
 #         cap.release()
@@ -656,7 +654,7 @@ class Ui_MainWindow(object):
         MainWindow.setTabOrder(self.right, self.minus5)
         MainWindow.setTabOrder(self.minus5, self.snapshot)
 
-    def retranslateUi(self, MainWindow):
+    async def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(
             _translate("MainWindow", "Aithre v4.2 - I23 Laser Shaping")
@@ -725,10 +723,10 @@ class Ui_MainWindow(object):
         self.actionExit.triggered.connect(self.quit)
         # sliders and sensors
         self.sliderExposure.setProperty(
-            "value", str(round(float(caget(pv.oav_cam_acqtime_rbv)) * 100))
+            "value", str(round(float(await caget(pv.oav_cam_acqtime_rbv)) * 100))
         )
         self.sliderGain.setProperty(
-            "value", str(round(float(caget(pv.oav_cam_gain_rbv))))
+            "value", str(round(float(await caget(pv.oav_cam_gain_rbv))))
         )
         # OAV connections thread
         # setZoom = self.zoomSelect.currentText()
@@ -752,8 +750,8 @@ class Ui_MainWindow(object):
         # bls_thread.safe.connect(self.updateBLS)
         # bls_thread.start()
         # gonio rotation buttons
-        self.buttonSlowOmegaTurn.clicked.connect(lambda: caput(pv.omega_velo, 15))
-        self.buttonFastOmegaTurn.clicked.connect(lambda: caput(pv.omega_velo, 150))
+        self.buttonSlowOmegaTurn.clicked.connect(lambda: self.omegaSpeed(15))
+        self.buttonFastOmegaTurn.clicked.connect(lambda: self.omegaSpeed(150))
         self.plusMinus3600.clicked.connect(self.goTopm3600)
         self.minus180.clicked.connect(lambda: self.gonioRotate(-180))
         self.plus180.clicked.connect(lambda: self.gonioRotate(180))
@@ -777,7 +775,7 @@ class Ui_MainWindow(object):
         self.sliderGain.valueChanged.connect(self.changeExposureGain)
         self.zeroAll.clicked.connect(self.returntozero)
         # robot buttons
-        self.resetRobot.clicked.connect(lambda: caput(pv.robot_reset, 1))
+        self.resetRobot.clicked.connect(lambda: self.resetRobot())
         self.load.clicked.connect(self.loadNextPin)
         self.unload.clicked.connect(self.unloadPin)
         self.dry.clicked.connect(self.dryGripper)
@@ -794,25 +792,28 @@ class Ui_MainWindow(object):
     #     print(safe)
     # print(self.safe)
     # if self.safe == 1:
-    #     caput(caput(pv.robot_ip16_force_option, "On"))
+    #     await caput(await caput(pv.robot_ip16_force_option, "On"))
     # else:
-    #     caput(caput(pv.robot_ip16_force_option, "No"))
+    #     await caput(await caput(pv.robot_ip16_force_option, "No"))
 
-    def loadNextPin(self):
-        caput(pv.robot_reset, 1)
+    async def loadNextPin(self):
+        await caput(pv.robot_reset, 1)
         time.sleep(1)
-        caput(pv.robot_next_pin, self.spinToLoad.value())
-        caput(pv.robot_proc_load, 1)
+        await caput(pv.robot_next_pin, self.spinToLoad.value())
+        await caput(pv.robot_proc_load, 1)
 
-    def unloadPin(self):
-        caput(pv.robot_reset, 1)
+    async def unloadPin(self):
+        await caput(pv.robot_reset, 1)
         time.sleep(1)
-        caput(pv.robot_proc_unload, 1)
+        await caput(pv.robot_proc_unload, 1)
 
-    def dryGripper(self):
-        caput(pv.robot_reset, 1)
+    async def dryGripper(self):
+        await caput(pv.robot_reset, 1)
         time.sleep(1)
-        caput(pv.robot_proc_dry, 1)
+        await caput(pv.robot_proc_dry, 1)
+        
+    async def resetRobot(self):
+        await caput(pv.robot_reset, 1)
 
     # def showRoboCam(self):
     #     th3 = Worker3()
@@ -825,102 +826,105 @@ class Ui_MainWindow(object):
     def quit(self):
         sys.exit()
 
-    def returntozero(self):
+    async def returntozero(self):
         for motor in [pv.gonio_y, pv.gonio_z, pv.stage_z, pv.omega]:
-            caput(motor, 0)
+            await caput(motor, 0)
 
+    async def omegaSpeed(self, degPerSec):
+        await caput(pv.omega_velo, degPerSec)
+        
     # # not currently working
     # def setZoom(self, level):
     #     #setZoom = self.zoomSelect.currentText()
     #     th.updateZoom(int(setZoom))
 
-    def changeExposureGain(self):
-        caput(pv.oav_cam_acqtime, (self.sliderExposure.value() / 100))
-        caput(pv.oav_cam_gain, self.sliderGain.value())
+    async def changeExposureGain(self):
+        await caput(pv.oav_cam_acqtime, (self.sliderExposure.value() / 100))
+        await caput(pv.oav_cam_gain, self.sliderGain.value())
 
-    def jogSample(self, direction):
+    async def jogSample(self, direction):
         if direction == "left":
-            caput(pv.stage_z, (float(caget(pv.stage_z_rbv)) + 0.005))
+            await caput(pv.stage_z, (float(await caget(pv.stage_z_rbv)) + 0.005))
         elif direction == "right":
-            caput(pv.stage_z, (float(caget(pv.stage_z_rbv)) - 0.005))
+            await caput(pv.stage_z, (float(await caget(pv.stage_z_rbv)) - 0.005))
         elif direction == "up":
-            caput(
+            await caput(
                 pv.gonio_y,
-                (float(caget(pv.gonio_y_rbv)))
-                + ((math.sin(math.radians(float(caget(pv.omega_rbv)))))) * 0.005,
+                (float(await caget(pv.gonio_y_rbv)))
+                + ((math.sin(math.radians(float(await caget(pv.omega_rbv)))))) * 0.005,
             )
-            caput(
+            await caput(
                 pv.gonio_z,
-                (float(caget(pv.gonio_z_rbv)))
-                + ((math.cos(math.radians(float(caget(pv.omega_rbv)))))) * 0.005,
+                (float(await caget(pv.gonio_z_rbv)))
+                + ((math.cos(math.radians(float(await caget(pv.omega_rbv)))))) * 0.005,
             )
         elif direction == "down":
-            caput(
+            await caput(
                 pv.gonio_y,
-                (float(caget(pv.gonio_y_rbv)))
-                - ((math.sin(math.radians(float(caget(pv.omega_rbv)))))) * 0.005,
+                (float(await caget(pv.gonio_y_rbv)))
+                - ((math.sin(math.radians(float(await caget(pv.omega_rbv)))))) * 0.005,
             )
-            caput(
+            await caput(
                 pv.gonio_z,
-                (float(caget(pv.gonio_z_rbv)))
-                - ((math.cos(math.radians(float(caget(pv.omega_rbv)))))) * 0.005,
+                (float(await caget(pv.gonio_z_rbv)))
+                - ((math.cos(math.radians(float(await caget(pv.omega_rbv)))))) * 0.005,
             )
         elif direction == "in":
-            caput(
+            await caput(
                 pv.gonio_y,
-                (float(caget(pv.gonio_y_rbv)))
-                - ((math.cos(math.radians(float(caget(pv.omega_rbv)))))) * 0.05,
+                (float(await caget(pv.gonio_y_rbv)))
+                - ((math.cos(math.radians(float(await caget(pv.omega_rbv)))))) * 0.05,
             )
-            caput(
+            await caput(
                 pv.gonio_z,
-                (float(caget(pv.gonio_z_rbv)))
-                - ((math.sin(math.radians(float(caget(pv.omega_rbv)))))) * 0.05,
+                (float(await caget(pv.gonio_z_rbv)))
+                - ((math.sin(math.radians(float(await caget(pv.omega_rbv)))))) * 0.05,
             )
         elif direction == "out":
-            caput(
+            await caput(
                 pv.gonio_y,
-                (float(caget(pv.gonio_y_rbv)))
-                + ((math.cos(math.radians(float(caget(pv.omega_rbv)))))) * 0.05,
+                (float(await caget(pv.gonio_y_rbv)))
+                + ((math.cos(math.radians(float(await caget(pv.omega_rbv)))))) * 0.05,
             )
-            caput(
+            await caput(
                 pv.gonio_z,
-                (float(caget(pv.gonio_z_rbv)))
-                + ((math.sin(math.radians(float(caget(pv.omega_rbv)))))) * 0.05,
+                (float(await caget(pv.gonio_z_rbv)))
+                + ((math.sin(math.radians(float(await caget(pv.omega_rbv)))))) * 0.05,
             )
         else:
             pass
 
-    def goTopm3600(self):
-        gonio_current = float(caget(pv.omega_rbv))
+    async def goTopm3600(self):
+        gonio_current = float(await caget(pv.omega_rbv))
         if gonio_current <= 0:
             gonio_request = 3600
         else:
             gonio_request = -3600
         print("Moving gonio omega to", str(gonio_request))
-        caput(pv.omega, gonio_request)
+        await caput(pv.omega, gonio_request)
 
     # moving sample to beam centre when clicked
-    def onMouse(self, event):
+    async def onMouse(self, event):
         x = event.pos().x()
         x = x * 2
         y = event.pos().y()
         y = y * 2
-        x_curr = float(caget(pv.stage_z_rbv))
+        x_curr = float(await caget(pv.stage_z_rbv))
         print(x_curr)
-        y_curr = float(caget(pv.gonio_y_rbv))
-        z_curr = float(caget(pv.gonio_z_rbv))
-        omega = float(caget(pv.omega_rbv))
+        y_curr = float(await caget(pv.gonio_y_rbv))
+        z_curr = float(await caget(pv.gonio_z_rbv))
+        omega = float(await caget(pv.omega_rbv))
         print("Clicked", x, y)
         Xmove = x_curr + ((x - beamX) * calibrate)
         print((x - beamX))
         Ymove = y_curr + (math.sin(math.radians(omega)) * ((y - beamY) * calibrate))
         Zmove = z_curr + (math.cos(math.radians(omega)) * ((y - beamY) * calibrate))
         print("Moving", Xmove, Ymove, Zmove)
-        caput(pv.stage_z, Xmove)
-        caput(pv.gonio_y, Ymove)
-        caput(pv.gonio_z, Zmove)
+        await caput(pv.stage_z, Xmove)
+        await caput(pv.gonio_y, Ymove)
+        await caput(pv.gonio_z, Zmove)
 
-    def setupOAV(self):
+    async def setupOAV(self):
         for callback in (
             pv.oav_roi_ecb,
             pv.oav_arr_ecb,
@@ -932,17 +936,17 @@ class Ui_MainWindow(object):
             pv.oav_hdf5_ecb,
             pv.oav_pva_ecb,
         ):
-            caput(callback, "Disable")
-        caput(pv.oav_mjpg_maxw, 2064)
-        caput(pv.oav_mjpg_maxh, 1544)
+            await caput(callback, "Disable")
+        await caput(pv.oav_mjpg_maxw, 2064)
+        await caput(pv.oav_mjpg_maxh, 1544)
 
-    def oavStart(self):
-        caput(pv.oav_acquire, "Acquire")
+    async def oavStart(self):
+        await caput(pv.oav_acquire, "Acquire")
 
-    def oavStop(self):
-        caput(pv.oav_acquire, "Done")
+    async def oavStop(self):
+        await caput(pv.oav_acquire, "Done")
 
-    def setImage(self, image):
+    async def setImage(self, image):
         self.image = image
         self.oav_stream.setPixmap(QPixmap.fromImage(image))
 
@@ -981,16 +985,16 @@ class Ui_MainWindow(object):
             except Exception as e:
                 print(f"An error occurred while saving the image: {e}")
 
-    def gonioRotate(self, amount):
-        gonio_current = float(caget(pv.omega_rbv))
+    async def gonioRotate(self, amount):
+        gonio_current = float(await caget(pv.omega_rbv))
         if amount == 0:
             gonio_request = 0
         else:
             gonio_request = gonio_current + amount
         print("Moving gonio omega to", str(gonio_request))
-        caput(pv.omega, gonio_request)
+        await caput(pv.omega, gonio_request)
 
-    def updateRBVs(self, rbvs):
+    async def updateRBVs(self, rbvs):
         # stagez, gony, gonz, omega, oavexp, oavgain, currentsamp, goniosens, stagex, stagey
         self.stagez_rbv.setText(str(round(float(rbvs[0]), 3)))  # used to be x now is z
         self.gony_rbv.setText(str(round(float(rbvs[1]), 3)))
@@ -1005,12 +1009,12 @@ class Ui_MainWindow(object):
         self.currentSamp.setText(str(rbvs[6]))
         blsafe = all(round(float(rbvs[x]), 3) == 0.00 for x in [0, 1, 2, 3, 8, 9])
         if blsafe:
-            caput(pv.robot_ip16_force_option, "On")
+            await caput(pv.robot_ip16_force_option, "On")
             self.indicatorBeamlineSafe.setStyleSheet("background-color: green")
         else:
-            caput(pv.robot_ip16_force_option, "No")
+            await caput(pv.robot_ip16_force_option, "No")
             self.indicatorBeamlineSafe.setStyleSheet("background-color: red")
-        if caget(pv.robot_pin_mounted) == "Yes":
+        if await caget(pv.robot_pin_mounted) == "Yes":
             self.indicatorGonioSensor.setStyleSheet("background-color: green")
         else:
             self.indicatorGonioSensor.setStyleSheet("background-color: red")
@@ -1021,25 +1025,25 @@ class Ui_MainWindow(object):
         else:
             self.indicatorRobotActive.setStyleSheet("background-color: green")
 
-    def checkIOCStatus(self):
+    async def checkIOCStatus(self):
         try:
-            caget(pv.omega_rbv)
+            await caget(pv.omega_rbv)
             self.indicatorMotionIOC.setStyleSheet("background-color: green")
         except:
             self.indicatorMotionIOC.setStyleSheet("background-color: red")
         try:
-            caget(pv.oav_cam_gain_rbv)
+            await caget(pv.oav_cam_gain_rbv)
             self.indicatorOAVIOC.setStyleSheet("background-color: green")
         except:
             self.indicatorOAVIOC.setStyleSheet("background-color: red")
         try:
-            caget(pv.robot_next_pin_rbv)
+            await caget(pv.robot_next_pin_rbv)
             self.indicatorRobotIOC.setStyleSheet("background-color: green")
         except:
             self.indicatorRobotIOC.setStyleSheet("background-color: red")
         self.indicatorZoomIOC.setStyleSheet("background-color: red")
         # try:
-        #     caget(pv.zoom_dud)
+        #     await caget(pv.zoom_dud)
         # except:
         #     print("no zoom?")
         # need to figure out a way for this to not loop trying to find the dud PV.

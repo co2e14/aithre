@@ -10,3 +10,4 @@ test.ui
 bin/test.jpg
 test.py
 .vscode/settings.json
+bin/__pycache__/pv.cpython-312.pyc
