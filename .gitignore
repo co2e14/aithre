@@ -11,4 +11,4 @@ bin/test.jpg
 test.py
 .vscode/settings.json
 .vscode/settings.json
-bin/__pycache__/pv.cpython-312.pyc
+bin/__pycache__
