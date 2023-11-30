@@ -37,30 +37,16 @@ class OAVThread(QtCore.QThread):
         self.zoomLevel = 1
         self.beamX = beamX
         self.beamY = beamY
-
+        self.line_width = line_width
+        self.line_spacing = line_spacing
+        self.line_color = line_color
+        
     def run(self):
         self.ThreadActive = True
-        cap = cv.VideoCapture("http://bl23i-ea-serv-01.diamond.ac.uk:8080/OAV.mjpg.mjpg")
+        self.cap = cv.VideoCapture("http://bl23i-ea-serv-01.diamond.ac.uk:8080/OAV.mjpg.mjpg")
         while self.ThreadActive:
-            ret, frame = cap.read()
+            ret, frame = self.cap.read()
             if self.ThreadActive and ret:
-                if self.zoomLevel != 1:
-                    new_width = int(frame.shape[1] / self.zoomLevel)
-                    new_height = int(frame.shape[0] / self.zoomLevel)
-                    
-                    x1 = max(self.beamX - new_width // 2, 0)
-                    y1 = max(self.beamY - new_height // 2, 0)
-                    x2 = min(self.beamX + new_width // 2, frame.shape[1])
-                    y2 = min(self.beamY + new_height // 2, frame.shape[0])
-                    
-                    x1, x2 = self._adjust_roi_boundaries(x1, x2, frame.shape[1], new_width)
-                    y1, y2 = self._adjust_roi_boundaries(y1, y2, frame.shape[0], new_height)
-
-                    cropped_frame = frame[y1:y2, x1:x2]
-                    
-                    frame = cv.resize(cropped_frame, (frame.shape[1], frame.shape[0]))
-                    
-                    
                 for i in range(14, frame.shape[1], line_spacing):
                     cv.line(frame, (i, 0), (i, frame.shape[0]), line_color, line_width)
                 for i in range(beamY % line_spacing, frame.shape[0], line_spacing):
@@ -79,7 +65,26 @@ class OAVThread(QtCore.QThread):
                     (beamX, beamY + 10),
                     (0, 255, 0),
                     2,
-                )
+                )                
+                
+                if self.zoomLevel != 1:
+                    new_width = int(frame.shape[1] / self.zoomLevel)
+                    new_height = int(frame.shape[0] / self.zoomLevel)
+                    
+                    x1 = max(self.beamX - new_width // 2, 0)
+                    y1 = max(self.beamY - new_height // 2, 0)
+                    x2 = min(self.beamX + new_width // 2, frame.shape[1])
+                    y2 = min(self.beamY + new_height // 2, frame.shape[0])
+                    
+                    x1, x2 = self.adjust_roi_boundaries(x1, x2, frame.shape[1], new_width)
+                    y1, y2 = self.adjust_roi_boundaries(y1, y2, frame.shape[0], new_height)
+
+                    cropped_frame = frame[y1:y2, x1:x2]
+                    
+                    frame = cv.resize(cropped_frame, (frame.shape[1], frame.shape[0]))
+                    
+                    
+
                 # cv.ellipse(frame, (beamX, beamY), (12, 8), 0.0, 0.0, 360, (0,0,255), thickness=2) # could use to draw cut...
                 # cv.putText(frame,'text',bottomLeftCornerOfText, font, fontScale, fontColor, thickness, lineType)
                 rgbImage = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
@@ -92,12 +97,24 @@ class OAVThread(QtCore.QThread):
                 p = convertToQtFormat
                 p = convertToQtFormat.scaled(1032, 772, QtCore.Qt.KeepAspectRatio)
                 self.ImageUpdate.emit(p)
-                
+    
+    def adjust_roi_boundaries(self, start, end, max_value, window_size):
+        if start < 0:
+            end -= start
+            start = 0
+        if end > max_value:
+            start -= (end - max_value)
+            end = max_value
+        if (end - start) < window_size and (start + window_size) <= max_value:
+            end = start + window_size
+        return start, end
+    
     def setZoomLevel(self, zoomLevel):
         self.zoomLevel = zoomLevel
 
     def stop(self):
         self.ThreadActive = False
+        self.cap.release()
         self.quit()
 
 # class BLSThread(QtCore.QThread):
