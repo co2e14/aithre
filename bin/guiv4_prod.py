@@ -115,7 +115,7 @@ class OAVThread(QtCore.QThread):
     def stop(self):
         self.ThreadActive = False
         self.cap.release()
-        self.quit()
+
 
 # class BLSThread(QtCore.QThread):
 #     safe = QtCore.pyqtSignal(bool)
