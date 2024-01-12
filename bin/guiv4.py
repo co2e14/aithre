@@ -288,7 +288,7 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.oav_stream.sizePolicy().hasHeightForWidth())
         self.oav_stream.setSizePolicy(sizePolicy)
         self.oav_stream.setMinimumSize(QtCore.QSize(0, 0))
-        self.oav_stream.setMaximumSize(QtCore.QSize(2064, 1544))
+        self.oav_stream.setMaximumSize(QtCore.QSize(1200, 905))
         self.oav_stream.setSizeIncrement(QtCore.QSize(0, 0))
         self.oav_stream.setFrameShape(QtWidgets.QFrame.WinPanel)
         self.oav_stream.setFrameShadow(QtWidgets.QFrame.Plain)

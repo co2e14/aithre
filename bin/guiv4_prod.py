@@ -12,20 +12,21 @@ import time
 import os
 from guiv4 import Ui_MainWindow
 
-# Set beam position and scale.
-version = "4.2.3"
 
-line_width = 1
-line_spacing = 60
-line_color = (164, 164, 164)
-beamX = 1190
-beamY = 736
-# div 2 if using Qt gui as its half size
+version = "4.2.4"
+# Set grid/beam position/scale.
+line_width = 2
+line_spacing = 120 # depends on pixel size, 60 for MANTA507B
+line_color = (140, 140, 140) #greyness
+beamX = 2094
+beamY = 1400 
 
 
-# pixel size 3.45, 2 to 1 imaging system so calib 1/2
-calibrate = 0.00172
-# calibrate = 0.00345
+# for MANTA507B pixel size 3.45, 2 to 1 imaging system so calib 1/2
+#calibrate = 0.00172
+# for Alvium pixel size is 1.85
+calibrate = 0.000925
+#calibrate = 0.00185
 
 # separate thread for OAV
 class OAVThread(QtCore.QThread):
@@ -54,17 +55,17 @@ class OAVThread(QtCore.QThread):
 
                 cv.line(
                     frame,
-                    (beamX - 10, beamY),
-                    (beamX + 10, beamY),
-                    (0, 255, 0),
-                    2,
+                    (beamX - 20, beamY), #bigness
+                    (beamX + 20, beamY),
+                    (0, 255, 0), #color
+                    3, # thickness
                 )
                 cv.line(
                     frame,
-                    (beamX, beamY - 10),
-                    (beamX, beamY + 10),
+                    (beamX, beamY - 20),
+                    (beamX, beamY + 20),
                     (0, 255, 0),
-                    2,
+                    3,
                 )                
                 
                 if self.zoomLevel != 1:
@@ -87,7 +88,7 @@ class OAVThread(QtCore.QThread):
 
                 # cv.ellipse(frame, (beamX, beamY), (12, 8), 0.0, 0.0, 360, (0,0,255), thickness=2) # could use to draw cut...
                 # cv.putText(frame,'text',bottomLeftCornerOfText, font, fontScale, fontColor, thickness, lineType)
-                rgbImage = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+                rgbImage = cv.cvtColor(frame, cv.COLOR_BGR2RGB) # color because of crosshair, drawings etc
                 convertToQtFormat = QtGui.QImage(
                     rgbImage.data,
                     rgbImage.shape[1],
@@ -95,7 +96,7 @@ class OAVThread(QtCore.QThread):
                     QtGui.QImage.Format_RGB888,
                 )
                 p = convertToQtFormat
-                p = convertToQtFormat.scaled(1032, 772, QtCore.Qt.KeepAspectRatio)
+                p = convertToQtFormat.scaled(1200, 905, QtCore.Qt.KeepAspectRatio) # numbers are a fraction of full res as full res is too big to fit on screen
                 self.ImageUpdate.emit(p)
     
     def adjust_roi_boundaries(self, start, end, max_value, window_size):
@@ -318,23 +319,23 @@ class MainWindow(QtWidgets.QMainWindow):
             ca.caput(
                 pv.gonio_y,
                 (float(ca.caget(pv.gonio_y_rbv)))
-                - ((math.cos(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
+                - ((math.sin(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
             )
             ca.caput(
                 pv.gonio_z,
                 (float(ca.caget(pv.gonio_z_rbv)))
-                - ((math.sin(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
+                - ((math.cos(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
             )
         elif direction == "out":
             ca.caput(
                 pv.gonio_y,
                 (float(ca.caget(pv.gonio_y_rbv)))
-                + ((math.cos(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
+                + ((math.sin(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
             )
             ca.caput(
                 pv.gonio_z,
                 (float(ca.caget(pv.gonio_z_rbv)))
-                + ((math.sin(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
+                + ((math.cos(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
             )
         else:
             pass
@@ -351,9 +352,9 @@ class MainWindow(QtWidgets.QMainWindow):
     # moving sample to beam centre when clicked
     def onMouse(self, event):
         x = event.pos().x()
-        x = x * 2
+        x = x * 4 # changed from 2 to 4 when moving from MANTA to ALVIUM
         y = event.pos().y()
-        y = y * 2
+        y = y * 4
         x_curr = float(ca.caget(pv.stage_z_rbv))
         print(x_curr)
         y_curr = float(ca.caget(pv.gonio_y_rbv))
@@ -382,8 +383,8 @@ class MainWindow(QtWidgets.QMainWindow):
             pv.oav_pva_ecb,
         ):
             ca.caput(callback, "Disable")
-        ca.caput(pv.oav_mjpg_maxw, 2064)
-        ca.caput(pv.oav_mjpg_maxh, 1544)
+        ca.caput(pv.oav_mjpg_maxw, 4024)
+        ca.caput(pv.oav_mjpg_maxh, 3036)
 
     def oavStart(self):
         ca.caput(pv.oav_acquire, "Acquire")
