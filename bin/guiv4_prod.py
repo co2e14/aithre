@@ -27,12 +27,7 @@ camera_pixel_size = 1.85
 feed_display_ratio = feed_width / display_width # 3.35
 calibrate = (camera_pixel_size / feed_display_ratio) / 1000 #  0.0005522
 
-print(f"feed to display ratio is {str(feed_display_ratio)} so calibrate for pixel size should be {str(calibrate)}")
-# for MANTA507B pixel size 3.45, 2 to 1 imaging system so calib 1/2
-#calibrate = 0.00172
-# for Alvium pixel size is 1.85
-#calibrate = 0.000925
-#calibrate = 0.00185
+print(f"Feed to display ratio is {str(feed_display_ratio)} so calibrate for pixel size should be {str(calibrate)}")
 
 # separate thread for OAV
 class OAVThread(QtCore.QThread):
