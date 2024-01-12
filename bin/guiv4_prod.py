@@ -19,13 +19,19 @@ line_width = 2
 line_spacing = 120 # depends on pixel size, 60 for MANTA507B
 line_color = (140, 140, 140) #greyness
 beamX = 2094
-beamY = 1400 
+beamY = 1400
+feed_width = 4024
+display_width = 1200
+display_height = 905
+camera_pixel_size = 1.85
+feed_display_ratio = feed_width / display_width # 3.35
+calibrate = (camera_pixel_size / feed_display_ratio) / 1000 #  0.0005522
 
-
+print(f"feed to display ratio is {str(feed_display_ratio)} so calibrate for pixel size should be {str(calibrate)}")
 # for MANTA507B pixel size 3.45, 2 to 1 imaging system so calib 1/2
 #calibrate = 0.00172
 # for Alvium pixel size is 1.85
-calibrate = 0.000925
+#calibrate = 0.000925
 #calibrate = 0.00185
 
 # separate thread for OAV
@@ -96,7 +102,7 @@ class OAVThread(QtCore.QThread):
                     QtGui.QImage.Format_RGB888,
                 )
                 p = convertToQtFormat
-                p = convertToQtFormat.scaled(1200, 905, QtCore.Qt.KeepAspectRatio) # numbers are a fraction of full res as full res is too big to fit on screen
+                p = convertToQtFormat.scaled(display_width, display_height, QtCore.Qt.KeepAspectRatio) # numbers are a fraction of full res as full res is too big to fit on screen
                 self.ImageUpdate.emit(p)
     
     def adjust_roi_boundaries(self, start, end, max_value, window_size):
@@ -352,9 +358,9 @@ class MainWindow(QtWidgets.QMainWindow):
     # moving sample to beam centre when clicked
     def onMouse(self, event):
         x = event.pos().x()
-        x = x * 4 # changed from 2 to 4 when moving from MANTA to ALVIUM
+        x = x * feed_display_ratio
         y = event.pos().y()
-        y = y * 4
+        y = y * feed_display_ratio
         x_curr = float(ca.caget(pv.stage_z_rbv))
         print(x_curr)
         y_curr = float(ca.caget(pv.gonio_y_rbv))
