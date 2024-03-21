@@ -14,7 +14,7 @@ from guiv4 import Ui_MainWindow
 from datetime import datetime
 
 
-version = "4.2.4"
+version = "4.2.5"
 # Set grid/beam position/scale.
 line_width = 2
 line_spacing = 115 # depends on pixel size, 60 for MANTA507B
