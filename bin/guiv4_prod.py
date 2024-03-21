@@ -185,8 +185,6 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        # setup
-        self.checkIOCStatus()
         # menus
         self.ui.actionExit.triggered.connect(self.quit)
         # sliders and sensors
@@ -209,6 +207,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.start.clicked.connect(self.oavStart)
         self.ui.stop.clicked.connect(self.oavStop)
         self.ui.snapshot.clicked.connect(self.saveSnapshot)
+        self.ui.autoCenter.clicked.connect(self.autoCenter)
         # RBV updating connections thread
         th2 = RBVThread()
         th2.rbvUpdate.connect(self.updateRBVs)
@@ -249,7 +248,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.load.clicked.connect(self.loadNextPin)
         self.ui.unload.clicked.connect(self.unloadPin)
         self.ui.dry.clicked.connect(self.dryGripper)
-        self.ui.pushButtonIOCCheck.clicked.connect(self.checkIOCStatus)
         zoom_level = self.ui.sliderZoom.value()
 
     def loadNextPin(self):
@@ -470,29 +468,13 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             pass
         
-    def checkIOCStatus(self):
-        try:
-            ca.caget(pv.omega_rbv)
-            self.ui.indicatorMotionIOC.setStyleSheet("background-color: green")
-        except:
-            self.ui.indicatorMotionIOC.setStyleSheet("background-color: red")
-        try:
-            ca.caget(pv.oav_cam_gain_rbv)
-            self.ui.indicatorOAVIOC.setStyleSheet("background-color: green")
-        except:
-            self.ui.indicatorOAVIOC.setStyleSheet("background-color: red")
-        try:
-            ca.caget(pv.robot_next_pin_rbv)
-            self.ui.indicatorRobotIOC.setStyleSheet("background-color: green")
-        except:
-            self.ui.indicatorRobotIOC.setStyleSheet("background-color: red")
-        self.ui.indicatorZoomIOC.setStyleSheet("background-color: red")
-        # try:
-        #     ca.caget(pv.zoom_dud)
-        # except:
-        #     print("no zoom?")
-        # need to figure out a way for this to not loop trying to find the dud PV.
-
+    def autoCenter(self):
+        ret, frame = cv.VideoCapture("http://bl23i-ea-serv-01.diamond.ac.uk:8080/OAV.mjpg.mjpg")
+        if ret:
+            cv.imwrite((os.path.join(os.path.dirname(os.getcwd), "captures", "autoCenter"), frame))
+            
+            
+        
 
 if __name__ == "__main__":
     import sys
