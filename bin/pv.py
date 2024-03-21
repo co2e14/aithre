@@ -63,6 +63,8 @@ oav_fimg_ecb = "LA18L-DI-OAV-01:FIMG:EnableCallbacks"
 oav_tiff_ecb = "LA18L-DI-OAV-01:TIFF:EnableCallbacks"
 oav_hdf5_ecb = "LA18L-DI-OAV-01:HDF5:EnableCallbacks"
 oav_pva_ecb = "LA18L-DI-OAV-01:PVA:EnableCallbacks"
+oav_max_x = "LA18L-DI-OAV-01:CAM:MaxSizeX_RBV" # max sensor width
+oav_max_y = "LA18L-DI-OAV-01:CAM:MaxSizeY_RBV" # max sensor height
 
 # robot
 robot_next_pin = "LA18L-MO-ROBOT-01:NEXT_PIN"

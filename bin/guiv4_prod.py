@@ -11,23 +11,24 @@ import numpy as np
 import time
 import os
 from guiv4 import Ui_MainWindow
+from datetime import datetime
 
 
 version = "4.2.4"
 # Set grid/beam position/scale.
 line_width = 2
-line_spacing = 120 # depends on pixel size, 60 for MANTA507B
+line_spacing = 115 # depends on pixel size, 60 for MANTA507B
 line_color = (140, 140, 140) #greyness
-beamX = 2094
-beamY = 1400
-feed_width = 4024
-display_width = 1200
-display_height = 905
-camera_pixel_size = 1.85
-feed_display_ratio = feed_width / display_width # 3.35
-calibrate = (camera_pixel_size / feed_display_ratio) / 1000 #  0.0005522
+beamX = 2276
+beamY = 1320
+feed_width = int(ca.caget(pv.oav_max_x))
+display_width = 2012
+display_height = 1518
+camera_pixel_size = 1.85 # Alvium1240M
+feed_display_ratio = feed_width / display_width
+calibrate = (camera_pixel_size / feed_display_ratio) / 1000 # play around with the end number to find correct
 
-print(f"Feed to display ratio is {str(feed_display_ratio)} so calibrate for pixel size should be {str(calibrate)}")
+print(f"Feed to display ratio is {str(feed_display_ratio)} so calibrate value for pixel size of {str(camera_pixel_size)}um should be {str(calibrate)}")
 
 # separate thread for OAV
 class OAVThread(QtCore.QThread):
@@ -42,14 +43,14 @@ class OAVThread(QtCore.QThread):
         self.line_width = line_width
         self.line_spacing = line_spacing
         self.line_color = line_color
-        
+
     def run(self):
         self.ThreadActive = True
         self.cap = cv.VideoCapture("http://bl23i-ea-serv-01.diamond.ac.uk:8080/OAV.mjpg.mjpg")
         while self.ThreadActive:
             ret, frame = self.cap.read()
             if self.ThreadActive and ret:
-                for i in range(14, frame.shape[1], line_spacing):
+                for i in range(beamX % line_spacing, frame.shape[1], line_spacing):
                     cv.line(frame, (i, 0), (i, frame.shape[0]), line_color, line_width)
                 for i in range(beamY % line_spacing, frame.shape[0], line_spacing):
                     cv.line(frame, (0, i), (frame.shape[1], i), line_color, line_width)
@@ -67,25 +68,25 @@ class OAVThread(QtCore.QThread):
                     (beamX, beamY + 20),
                     (0, 255, 0),
                     3,
-                )                
-                
+                )
+
                 if self.zoomLevel != 1:
                     new_width = int(frame.shape[1] / self.zoomLevel)
                     new_height = int(frame.shape[0] / self.zoomLevel)
-                    
+
                     x1 = max(self.beamX - new_width // 2, 0)
                     y1 = max(self.beamY - new_height // 2, 0)
                     x2 = min(self.beamX + new_width // 2, frame.shape[1])
                     y2 = min(self.beamY + new_height // 2, frame.shape[0])
-                    
+
                     x1, x2 = self.adjust_roi_boundaries(x1, x2, frame.shape[1], new_width)
                     y1, y2 = self.adjust_roi_boundaries(y1, y2, frame.shape[0], new_height)
 
                     cropped_frame = frame[y1:y2, x1:x2]
-                    
+
                     frame = cv.resize(cropped_frame, (frame.shape[1], frame.shape[0]))
-                    
-                    
+
+
 
                 # cv.ellipse(frame, (beamX, beamY), (12, 8), 0.0, 0.0, 360, (0,0,255), thickness=2) # could use to draw cut...
                 # cv.putText(frame,'text',bottomLeftCornerOfText, font, fontScale, fontColor, thickness, lineType)
@@ -99,7 +100,7 @@ class OAVThread(QtCore.QThread):
                 p = convertToQtFormat
                 p = convertToQtFormat.scaled(display_width, display_height, QtCore.Qt.KeepAspectRatio) # numbers are a fraction of full res as full res is too big to fit on screen
                 self.ImageUpdate.emit(p)
-    
+
     def adjust_roi_boundaries(self, start, end, max_value, window_size):
         if start < 0:
             end -= start
@@ -110,7 +111,7 @@ class OAVThread(QtCore.QThread):
         if (end - start) < window_size and (start + window_size) <= max_value:
             end = start + window_size
         return start, end
-    
+
     def setZoomLevel(self, zoomLevel):
         self.zoomLevel = zoomLevel
 
@@ -118,26 +119,13 @@ class OAVThread(QtCore.QThread):
         self.ThreadActive = False
         self.cap.release()
 
-
-# class BLSThread(QtCore.QThread):
-#     safe = QtCore.pyqtSignal(bool)
-
-#     def run(self):
-#         self.ThreadActive = True
-#         while self.ThreadActive:
-#             time.sleep(5)
-#             for rbv in [pv.omega_rbv, pv.gonio_y_rbv, pv.gonio_z_rbv, pv.stage_x_rbv, pv.stage_y_rbv]:
-#                 if round(float(ca.caget(rbv)), 1) == 0.0:
-#                     safe = True
-#             self.safe.emit(safe)
-
 # separate thread to run caget for RBVs
 class RBVThread(QtCore.QThread):
     rbvUpdate = QtCore.pyqtSignal(list)
 
     def run(self):
-        self.ThreadActive = True
-        while self.ThreadActive:
+        while True:
+            time.sleep(1)
             allRBVsList = []
             allRBVsList += [str(ca.caget(pv.stage_z_rbv))]
             allRBVsList += [str(ca.caget(pv.gonio_y_rbv))]
@@ -157,35 +145,38 @@ class RBVThread(QtCore.QThread):
             allRBVsList += [str(ca.caget(pv.stage_x_rbv))]
             allRBVsList += [str(ca.caget(pv.stage_y_rbv))]
             self.rbvUpdate.emit(allRBVsList)
-
+            print(f"lRBVThreadComplete {str(datetime.now())}")
 
 class robotCheckThread(QtCore.QThread):
     robotUpdate = QtCore.pyqtSignal(list)
 
     def run(self):
-        self.ThreadActive = True
-        while self.ThreadActive:
+        while True:
+            time.sleep(1)
             robotUpdateList = []
             robotUpdateList += [str(ca.caget(pv.robot_prog_running))]
             self.robotUpdate.emit(robotUpdateList)
 
+# class beamlineSafeThread(QtCore.QThread):
+#     beamlineSafe = QtCore.pyqtSignal(list)
 
-
-# not working yet. Kind of. Ish. Need to have it emit to gui
-# class Worker3(QtCore.QThread):
 #     def run(self):
 #         self.ThreadActive = True
-#         cap = cv.VideoCapture("http://ws464.diamond.ac.uk:8080/OAV.mjpg.mjpg")
 #         while self.ThreadActive:
-#             cv.namedWindow("RoboView")
-#             ret, frame = cap.read()
-#             if self.ThreadActive:
-#                 cv.imshow("RoboView", frame)
+#             safeUpdateList = []
+#             safeUpdateList += [str(ca.caget(pv.stage_z_rbv))]
+#             safeUpdateList += [str(ca.caget(pv.gonio_y_rbv))]
+#             safeUpdateList += [str(ca.caget(pv.gonio_z_rbv))]
+#             safeUpdateList += [str(ca.caget(pv.omega_rbv))]
+#             safeUpdateList += [str(ca.caget(pv.stage_x_rbv))]
+#             safeUpdateList += [str(ca.caget(pv.stage_y_rbv))]
+#             blsafe = all(round(float(safeUpdateList[x]), 3) == 0.00 for x in [0, 1, 2, 3, 4, 5])
+#             if blsafe:
+#                 safeUpdateList = ["Yes"]
+#             else:
+#                 safeUpdateList = ["No"]
+#             self.beamlineSafe.emit(safeUpdateList)
 
-#     def stop(self):
-#         self.ThreadActive = False
-#         cap = cv.VideoCapture("http://i23-lasereye-01.diamond.ac.uk/mjpg/video.mjpg")
-#         cap.release()
 
 class MainWindow(QtWidgets.QMainWindow):
     zoomChanged = QtCore.pyqtSignal(int)
@@ -193,7 +184,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         self.ui = Ui_MainWindow()
-        self.ui.setupUi(self)        
+        self.ui.setupUi(self)
         # setup
         self.checkIOCStatus()
         # menus
@@ -226,6 +217,9 @@ class MainWindow(QtWidgets.QMainWindow):
         th3 = robotCheckThread()
         th3.robotUpdate.connect(self.setRobotActiveStatus)
         th3.start()
+        # th4 = beamlineSafeThread()
+        # th4.beamlineSafe.connect(self.beamlineSafeStatus)
+        # th4.start()
         # gonio rotation buttons
         self.ui.buttonSlowOmegaTurn.clicked.connect(lambda: ca.caput(pv.omega_velo, 15))
         self.ui.buttonFastOmegaTurn.clicked.connect(lambda: ca.caput(pv.omega_velo, 150))
@@ -256,21 +250,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.unload.clicked.connect(self.unloadPin)
         self.ui.dry.clicked.connect(self.dryGripper)
         self.ui.pushButtonIOCCheck.clicked.connect(self.checkIOCStatus)
+        zoom_level = self.ui.sliderZoom.value()
 
     def loadNextPin(self):
         ca.caput(pv.robot_reset, 1)
-        time.sleep(1)
-        ca.caput(pv.robot_next_pin, self.ui.spinToLoad.value())
+        time.sleep(3)
+        ca.caput(pv.robot_next_pin, int(self.ui.spinToLoad.value()))
+        time.sleep(3)
         ca.caput(pv.robot_proc_load, 1)
 
     def unloadPin(self):
         ca.caput(pv.robot_reset, 1)
-        time.sleep(1)
+        time.sleep(3)
         ca.caput(pv.robot_proc_unload, 1)
 
     def dryGripper(self):
         ca.caput(pv.robot_reset, 1)
-        time.sleep(1)
+        time.sleep(3)
         ca.caput(pv.robot_proc_dry, 1)
 
     def quit(self):
@@ -320,23 +316,23 @@ class MainWindow(QtWidgets.QMainWindow):
             ca.caput(
                 pv.gonio_y,
                 (float(ca.caget(pv.gonio_y_rbv)))
-                - ((math.sin(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
+                - ((math.cos(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
             )
             ca.caput(
                 pv.gonio_z,
                 (float(ca.caget(pv.gonio_z_rbv)))
-                - ((math.cos(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
+                - ((math.sin(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
             )
         elif direction == "out":
             ca.caput(
                 pv.gonio_y,
                 (float(ca.caget(pv.gonio_y_rbv)))
-                + ((math.sin(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
+                + ((math.cos(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
             )
             ca.caput(
                 pv.gonio_z,
                 (float(ca.caget(pv.gonio_z_rbv)))
-                + ((math.cos(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
+                + ((math.sin(math.radians(float(ca.caget(pv.omega_rbv)))))) * 0.05,
             )
         else:
             pass
@@ -395,10 +391,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def setImage(self, image):
         self.image = image
-        zoom_level = self.ui.sliderZoom.value()
-        
         self.ui.oav_stream.setPixmap(QtGui.QPixmap.fromImage(image))
-        
+
     def saveSnapshot(self):
         image = self.image
         print(f"Q image format: {image.format()}")
@@ -412,7 +406,7 @@ class MainWindow(QtWidgets.QMainWindow):
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self.ui.centralwidget,"QFileDialog.getSaveFileName()","","JPEG Files (*.jpg);;All Files (*)", options=options)
-        
+
         if file_name:
             _, file_extension = os.path.splitext(file_name)
             if not file_extension:
@@ -466,6 +460,16 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.ui.indicatorRobotActive.setStyleSheet("background-color: green")
 
+    def beamlineSafeStatus(self, beamlineSafeList):
+        if str(beamlineSafeList[0]) == "Yes":
+            ca.caput(pv.robot_ip16_force_option, "On")
+            self.ui.indicatorBeamlineSafe.setStyleSheet("background-color: green")
+        elif str(beamlineSafeList[0]) == "No":
+            ca.caput(pv.robot_ip16_force_option, "No")
+            self.ui.indicatorBeamlineSafe.setStyleSheet("background-color: red")
+        else:
+            pass
+        
     def checkIOCStatus(self):
         try:
             ca.caget(pv.omega_rbv)
